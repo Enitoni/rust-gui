@@ -41,21 +41,6 @@ impl FlexibleUnit {
     }
 }
 
-#[derive(Debug)]
-pub struct CalculatedElement {
-    pub rect: Rect,
-    pub children: Vec<CalculatedElement>,
-}
-
-impl CalculatedElement {
-    pub fn empty(width: Int, height: Int) -> CalculatedElement {
-        CalculatedElement {
-            rect: Rect::from(width, height),
-            children: Vec::new(),
-        }
-    }
-}
-
 pub struct FlexibleDimensions {
     pub width: FlexibleUnit,
     pub height: FlexibleUnit,

@@ -1,11 +1,14 @@
 mod common;
 mod directional;
 
+mod calculated;
 mod position;
 mod rect;
 
 use common::*;
 use directional::*;
+
+use self::calculated::CalculatedElement;
 
 enum ElementKind {
     Directional(Directional),
@@ -123,13 +126,15 @@ mod test {
             children: vec![content, sidebar],
         };
 
-        let iterations = 1000;
+        let iterations = 5000;
+        let mut nodes: usize = 0;
 
         for i in 0..iterations {
             let result = parent.calculate(Some(viewport));
 
             if i == 0 {
                 println!("{:#?}", result);
+                nodes = result.nodes();
             }
         }
 
@@ -137,10 +142,11 @@ mod test {
         let total = time.elapsed().as_secs_f32();
 
         println!(
-            "Test took on average {} milliseconds, total execution {} milliseconds with {} iterations.",
+            "Test took on average {} milliseconds, total execution {} milliseconds with {} iterations on {} nodes.",
             average * 1000.0,
             total * 1000.0,
-            iterations
+            iterations,
+            nodes,
         );
     }
 }

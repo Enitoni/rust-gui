@@ -1,4 +1,4 @@
-use super::{common::*, rect::Rect, Element};
+use super::{calculated::CalculatedElement, common::*, rect::Rect, Element};
 
 pub struct Directional {
     pub direction: Direction,
