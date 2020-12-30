@@ -1,10 +1,18 @@
 use std::fmt;
 
-use super::rect::Rect;
-
+#[derive(Clone, Copy)]
 pub enum Direction {
     Horizontal,
     Vertical,
+}
+
+impl Direction {
+    pub fn swap<T>(&self, a: T, b: T) -> (T, T) {
+        match self {
+            Direction::Horizontal => (a, b),
+            Direction::Vertical => (b, a),
+        }
+    }
 }
 
 pub type Int = u32;
