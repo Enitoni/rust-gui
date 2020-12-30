@@ -7,6 +7,7 @@ pub enum Direction {
 }
 
 impl Direction {
+    /// Swaps a and b if self is vertical
     pub fn swap<T>(&self, a: T, b: T) -> (T, T) {
         match self {
             Direction::Horizontal => (a, b),
@@ -55,6 +56,13 @@ pub struct FlexibleDimensions {
 }
 
 impl FlexibleDimensions {
+    pub fn calculate(&self, bounds: Dimensions) -> Dimensions {
+        Dimensions {
+            width: self.width.calculate(bounds.width),
+            height: self.height.calculate(bounds.height),
+        }
+    }
+
     pub fn fixed(&self) -> Result<Dimensions, &str> {
         let result: Result<Dimensions, &str> = {
             let width = self.width.fixed()?;
