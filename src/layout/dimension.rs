@@ -16,6 +16,11 @@ impl Dimensions {
     pub fn to_float(&self) -> (Float, Float) {
         (self.width as Float, self.height as Float)
     }
+
+    pub fn add(&mut self, width: Int, height: Int) {
+        self.width += width;
+        self.height += height;
+    }
 }
 
 impl fmt::Debug for Dimensions {
