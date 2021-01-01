@@ -1,4 +1,4 @@
-use super::{common::*, position::Position};
+use super::{common::*, dimension::Dimensions, position::Position};
 
 pub enum Side {
     Top,
@@ -54,7 +54,7 @@ impl Rect {
 #[cfg(test)]
 mod tests {
     use super::Rect;
-    use crate::layout::common::*;
+    use crate::layout::dimension::Dimensions;
 
     #[test]
     fn it_centers() {
