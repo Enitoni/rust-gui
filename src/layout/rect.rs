@@ -7,25 +7,18 @@ pub enum Side {
     Right,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Rect {
     pub dimensions: Dimensions,
     pub position: Position,
 }
 
 impl Rect {
-    pub fn from(width: Int, height: Int) -> Rect {
+    pub fn from(dimensions: Dimensions) -> Rect {
         Rect {
-            dimensions: Dimensions::from(width, height),
+            dimensions,
             position: Position::from(0.0, 0.0),
         }
-    }
-
-    pub fn with_position(width: Int, height: Int, position: Position) -> Rect {
-        let mut new = Rect::from(width, height);
-        new.position = position;
-
-        new
     }
 
     pub fn offset(&self, side: Side, value: Int) -> Int {
@@ -58,7 +51,7 @@ mod tests {
 
     #[test]
     fn it_centers() {
-        let a = Rect::from(2, 2);
+        let a = Rect::from(Dimensions::from(2, 2));
         let b = Dimensions::from(1, 1);
 
         let result = a.center(b);

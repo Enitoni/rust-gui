@@ -4,6 +4,7 @@ use super::{
     common::{Direction::*, FlexibleUnit::*, *},
     dimension::Dimensions,
     directional::Directional,
+    rect::Rect,
     Element,
     ElementKind::*,
 };
@@ -22,7 +23,7 @@ pub fn random_direction() -> Direction {
     }
 }
 
-pub fn random_directional_list(bounds: Dimensions, complexity: &mut usize) -> Element {
+pub fn random_directional_list(bounds: Rect, complexity: &mut usize) -> Element {
     let mut rng = thread_rng();
 
     let direction = random_direction();
@@ -30,8 +31,8 @@ pub fn random_directional_list(bounds: Dimensions, complexity: &mut usize) -> El
 
     let count = {
         let available_space = match &direction {
-            Horizontal => bounds.width,
-            Vertical => bounds.height,
+            Horizontal => bounds.dimensions.width,
+            Vertical => bounds.dimensions.height,
         };
 
         let max_count = (available_space as f32 / space as f32).floor() as usize;
@@ -60,7 +61,7 @@ pub fn random_directional_list(bounds: Dimensions, complexity: &mut usize) -> El
 
     *complexity -= children.len() + 1;
 
-    let (container_space, _) = direction.swap(bounds.width, bounds.width);
+    let (container_space, _) = direction.swap(bounds.dimensions.width, bounds.dimensions.width);
     let (width, height) = direction.swap(Fixed(container_space), Collapse);
 
     Element {

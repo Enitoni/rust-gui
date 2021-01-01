@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::{common::Int, rect::Rect};
+use super::{dimension::Dimensions, rect::Rect};
 
 const INDENTATION: &str = "  ";
 
@@ -10,9 +10,16 @@ pub struct CalculatedElement {
 }
 
 impl CalculatedElement {
-    pub fn empty(width: Int, height: Int) -> CalculatedElement {
+    pub fn empty(dimensions: Dimensions) -> CalculatedElement {
         CalculatedElement {
-            rect: Rect::from(width, height),
+            rect: Rect::from(dimensions),
+            children: Vec::new(),
+        }
+    }
+
+    pub fn from_rect(rect: Rect) -> CalculatedElement {
+        CalculatedElement {
+            rect,
             children: Vec::new(),
         }
     }

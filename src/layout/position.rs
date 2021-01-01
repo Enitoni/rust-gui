@@ -2,6 +2,7 @@ use std::fmt;
 
 use super::common::*;
 
+#[derive(Clone, Copy)]
 pub struct Position {
     pub x: Float,
     pub y: Float,

@@ -26,11 +26,11 @@ pub enum FlexibleUnit {
 }
 
 impl FlexibleUnit {
-    pub fn calculate(&self, target: Int) -> Int {
+    pub fn calculate(&self, min: Int, max: Int) -> Int {
         match self {
             FlexibleUnit::Fixed(a) => *a,
-            FlexibleUnit::Stretch => target,
-            FlexibleUnit::Collapse => 0,
+            FlexibleUnit::Stretch => max,
+            FlexibleUnit::Collapse => min,
         }
     }
 
@@ -56,11 +56,16 @@ pub struct FlexibleDimensions {
 }
 
 impl FlexibleDimensions {
-    pub fn calculate(&self, bounds: Dimensions) -> Dimensions {
+    pub fn calculate(&self, content: Dimensions, bounds: Dimensions) -> Dimensions {
         Dimensions {
-            width: self.width.calculate(bounds.width),
-            height: self.height.calculate(bounds.height),
+            width: self.width.calculate(content.width, bounds.width),
+            height: self.height.calculate(content.height, bounds.height),
         }
+    }
+
+    // This is used when the content is unknown, such as with a childless element
+    pub fn calculate_without_content(&self, bounds: Dimensions) -> Dimensions {
+        self.calculate(Dimensions::from(0, 0), bounds)
     }
 
     pub fn fixed(&self) -> Result<Dimensions, &str> {

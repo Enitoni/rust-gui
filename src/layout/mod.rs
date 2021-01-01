@@ -12,7 +12,7 @@ mod rect;
 use common::*;
 use directional::*;
 
-use self::{calculated::CalculatedElement, dimension::Dimensions};
+use self::{calculated::CalculatedElement, rect::Rect};
 
 enum ElementKind {
     Directional(Directional),
@@ -25,9 +25,9 @@ pub struct Element {
 }
 
 impl Element {
-    fn calculate(&self, dimensions: Option<Dimensions>) -> CalculatedElement {
+    fn calculate(&self, bounds: Option<Rect>) -> CalculatedElement {
         match &self.kind {
-            ElementKind::Directional(l) => l.calculate(&self, dimensions),
+            ElementKind::Directional(l) => l.calculate(&self, bounds),
         }
     }
 }
@@ -41,17 +41,18 @@ mod test {
         dimension::Dimensions,
         directional::Directional,
         mock::random_directional_list,
+        rect::Rect,
         Element,
         ElementKind::*,
     };
 
     #[test]
     fn computes_complex_directional_layout() {
-        let viewport = Dimensions::from(5000, 5000);
+        let rect = Rect::from(Dimensions::from(5000, 5000));
 
         let mut complexity: usize = 200;
 
-        let list = random_directional_list(viewport, &mut complexity);
+        let list = random_directional_list(rect.clone(), &mut complexity);
 
         let parent = Element {
             dimensions: FlexibleDimensions {
@@ -71,7 +72,7 @@ mod test {
         let time = Instant::now();
 
         for i in 0..iterations {
-            let result = parent.calculate(Some(viewport));
+            let result = parent.calculate(Some(rect.clone()));
 
             if i == 0 {
                 println!("{:#?}", result);
