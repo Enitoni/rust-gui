@@ -14,11 +14,19 @@ impl Direction {
             Direction::Vertical => (b, a),
         }
     }
+
+    pub fn flip(&self) -> Direction {
+        match self {
+            Direction::Horizontal => Direction::Vertical,
+            Direction::Vertical => Direction::Horizontal,
+        }
+    }
 }
 
 pub type Int = u32;
 pub type Float = f32;
 
+#[derive(PartialEq)]
 pub enum FlexibleUnit {
     Fixed(Int),
     Collapse,
