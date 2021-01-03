@@ -42,10 +42,7 @@ pub fn random_directional_list(bounds: Rect, complexity: &mut usize) -> Element 
     let mut children: Vec<Element> = Vec::with_capacity(count);
 
     for _ in 0..count - 1 {
-        let (width, height) = match &direction {
-            Horizontal => (Fixed(space), Stretch),
-            Vertical => (Stretch, Fixed(space)),
-        };
+        let (width, height) = direction.swap(Fixed(space), Stretch);
 
         let element = Element {
             kind: Directional(Directional {
@@ -62,7 +59,7 @@ pub fn random_directional_list(bounds: Rect, complexity: &mut usize) -> Element 
     *complexity -= children.len() + 1;
 
     let (container_space, _) = direction.swap(bounds.dimensions.width, bounds.dimensions.width);
-    let (width, height) = direction.swap(Fixed(container_space), Collapse);
+    let (width, height) = direction.swap(Collapse, Fixed(container_space));
 
     Element {
         kind: Directional(Directional {
