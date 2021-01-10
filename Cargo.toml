@@ -11,7 +11,7 @@ edition = "2018"
 
 
 [dependencies]
-
-# THESE ARE ONLY FOR TESTING PURPOSES, REMOVE THEM BEFORE PUBLISHING!
 rand="0.8"
+
+[target.'cfg(windows)'.dependencies]
 sfml="0.15.1"
