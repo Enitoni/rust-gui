@@ -32,6 +32,18 @@ impl CalculatedElement {
         self.children.iter().fold(1, |acc, c| acc + c.nodes())
     }
 
+    pub fn flatten(&self) -> Vec<&CalculatedElement> {
+        let mut result = vec![self];
+
+        for child in &self.children {
+            for element in child.flatten() {
+                &result.push(element);
+            }
+        }
+
+        result
+    }
+
     fn stringify(&self, indents: usize) -> String {
         let CalculatedElement { rect, .. } = self;
         let Rect {
