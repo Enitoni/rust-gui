@@ -224,12 +224,7 @@ impl DirectionalDimensions for Dimensions {
 #[cfg(test)]
 mod test {
     use crate::layout::{
-        common::Sizing,
-        dimension::Dimensions,
-        element::{Element, ElementBuilder, ElementKind::*},
-        rect::Rect,
-        Direction::*,
-        SizingUnit::*,
+        dimension::Dimensions, element::ElementBuilder, rect::Rect, Direction::*, SizingUnit::*,
     };
 
     use super::Directional;

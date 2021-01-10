@@ -9,20 +9,19 @@ mod element;
 mod position;
 mod rect;
 
-use common::*;
-use directional::*;
-
-use self::{calculated::CalculatedElement, rect::Rect};
+pub use common::*;
+pub use dimension::*;
+pub use directional::*;
 
 #[cfg(test)]
 mod test {
     use std::time::Instant;
 
     use super::{
-        common::{Direction::*, Sizing, SizingUnit::*},
+        common::{Direction::*, SizingUnit::*},
         dimension::Dimensions,
         directional::Directional,
-        element::{Element, ElementBuilder, ElementKind::*},
+        element::ElementBuilder,
         mock::random_directional_list,
         rect::Rect,
     };

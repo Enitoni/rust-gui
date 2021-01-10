@@ -4,7 +4,7 @@ use super::{
     common::{Direction::*, SizingUnit::*, *},
     dimension::Dimensions,
     directional::Directional,
-    element::{Element, ElementBuilder, ElementKind::*},
+    element::{Element, ElementBuilder},
     rect::Rect,
 };
 
