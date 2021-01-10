@@ -26,8 +26,19 @@ pub fn header() -> Element {
         .build()
 }
 
+fn content() -> Element {
+    directional(Vertical, Stretch, Stretch, 16.)
+        .children(vec![
+            directional(Horizontal, Stretch, Fixed(200.), 0.).build(),
+            directional(Horizontal, Stretch, Stretch, 0.).build(),
+        ])
+        .build()
+}
+
 fn body() -> Element {
-    directional(Horizontal, Stretch, Stretch, 0.).build()
+    directional(Horizontal, Stretch, Stretch, 0.)
+        .children(vec![content()])
+        .build()
 }
 
 pub fn test_layout() -> Element {
