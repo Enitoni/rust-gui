@@ -21,6 +21,11 @@ impl Dimensions {
         self.width += width;
         self.height += height;
     }
+
+    pub fn subtract(&mut self, width: Float, height: Float) {
+        self.width -= width;
+        self.height -= height;
+    }
 }
 
 impl fmt::Debug for Dimensions {

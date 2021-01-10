@@ -1,5 +1,10 @@
 use super::{
-    calculated::CalculatedElement, common::*, dimension::Dimensions, element::Element, rect::Rect,
+    calculated::CalculatedElement,
+    common::*,
+    dimension::Dimensions,
+    element::Element,
+    padding::{PaddedDimensions, Padding},
+    rect::Rect,
 };
 
 /// Represents a layout of child elements in a given direction, with a given spacing
@@ -13,7 +18,7 @@ pub struct Directional {
 
 impl Directional {
     /// Returns a new Rect with padding and spacing accounted for
-    fn occupy_bounds(&self, element: &Element, bounds: Rect) -> Rect {
+    fn occupy_bounds(&self, element: &Element, bounds: &Rect) -> Rect {
         let mut new_bounds = bounds.clone();
 
         new_bounds.dimensions.occupy_with_direction(
@@ -21,11 +26,14 @@ impl Directional {
             self.spacing * element.children().len() as f32,
         );
 
+        new_bounds.dimensions.occupy_with_padding(element.padding());
+
         new_bounds
     }
 
-    fn calculate_child_positions(&self, children: &mut [CalculatedElement]) {
+    fn calculate_child_positions(&self, padding: &Padding, children: &mut [CalculatedElement]) {
         let mut offset = 0.0;
+        let (top, _, left, _) = padding.to_tuple();
 
         for child in children.iter_mut() {
             let Dimensions { width, height } = child.rect.dimensions;
@@ -33,7 +41,7 @@ impl Directional {
             let (x, y) = self.direction.swap(offset, 0.0);
             let (space, _) = self.direction.swap(width, height);
 
-            child.rect.translate(x, y);
+            child.rect.translate(x + top, y + left);
             offset += space as Float + self.spacing as Float;
         }
     }
@@ -48,10 +56,12 @@ impl Directional {
         CalculatedElement::empty(calculated)
     }
 
-    fn calculate_childful(&self, element: &Element, bounds: Option<Rect>) -> CalculatedElement {
+    fn calculate_childful(&self, element: &Element, outer: Option<Rect>) -> CalculatedElement {
         let children = element.children();
 
-        let bounds = self.occupy_bounds(element, bounds.unwrap());
+        let outer = outer.unwrap();
+        let inner = self.occupy_bounds(element, &outer);
+
         let sorted_indices = sorted_child_indices(self.direction, children);
 
         let mut indices_to_correct: Vec<usize> = Vec::with_capacity(sorted_indices.len());
@@ -74,13 +84,13 @@ impl Directional {
             let calculated_child = match unit {
                 SizingUnit::Stretch => {
                     let (width, height) =
-                        accumulated_space.diff_with_direction(self.direction, bounds.dimensions);
+                        accumulated_space.diff_with_direction(self.direction, inner.dimensions);
 
                     child.calculate(Some(Rect::new(width, height, 0.0, 0.0)))
                 }
                 _ => {
                     let rect = Rect::from_dimensions(
-                        child.sizing().calculate_without_content(bounds.dimensions),
+                        child.sizing().calculate_without_content(inner.dimensions),
                     );
                     child.calculate(Some(rect))
                 }
@@ -102,9 +112,9 @@ impl Directional {
             calculated_children[index] = Some(calculated_child);
         }
 
-        let calculated_dimensions = element
+        let calculated_inner_dimensions = element
             .sizing()
-            .calculate(accumulated_space, bounds.dimensions);
+            .calculate(accumulated_space, inner.dimensions);
 
         // Re-calculate children with stretchy secondary sizing
         // TODO: Clean this up if possible.
@@ -117,7 +127,7 @@ impl Directional {
             };
 
             let new_calculation =
-                child.calculate(Some(Rect::from_dimensions(calculated_dimensions)));
+                child.calculate(Some(Rect::from_dimensions(calculated_inner_dimensions)));
 
             let (_, new_secondary) = self.direction.swap(
                 new_calculation.rect.dimensions.width,
@@ -133,10 +143,14 @@ impl Directional {
         }
 
         let mut calculated_children: Vec<_> = calculated_children.into_iter().flatten().collect();
-        self.calculate_child_positions(&mut calculated_children);
+        self.calculate_child_positions(element.padding(), &mut calculated_children);
 
         CalculatedElement {
-            rect: Rect::from_dimensions(calculated_dimensions),
+            rect: Rect::from_dimensions(
+                element
+                    .sizing()
+                    .calculate(accumulated_space, outer.dimensions),
+            ),
             children: calculated_children,
         }
     }
