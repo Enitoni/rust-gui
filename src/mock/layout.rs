@@ -1,9 +1,9 @@
-use crate::{Dimensions, Direction, Directional, Element, ElementBuilder, Int, Rect, SizingUnit};
+use crate::{Dimensions, Direction, Directional, Element, ElementBuilder, Rect, SizingUnit};
 use rand::*;
 use Direction::*;
 use SizingUnit::*;
 
-pub fn random_dimension(max: Int) -> Int {
+pub fn random_dimension(max: u32) -> u32 {
     let max = thread_rng().gen_range(0..max);
     max - max % 5
 }
