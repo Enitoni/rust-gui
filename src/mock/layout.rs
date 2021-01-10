@@ -1,12 +1,7 @@
+use crate::{Dimensions, Direction, Directional, Element, ElementBuilder, Int, Rect, SizingUnit};
 use rand::*;
-
-use super::{
-    common::{Direction::*, SizingUnit::*, *},
-    dimension::Dimensions,
-    directional::Directional,
-    element::{Element, ElementBuilder},
-    rect::Rect,
-};
+use Direction::*;
+use SizingUnit::*;
 
 pub fn random_dimension(max: Int) -> Int {
     let max = thread_rng().gen_range(0..max);
@@ -55,9 +50,7 @@ pub fn random_directional_list(bounds: Rect, complexity: &mut usize) -> Element 
     }
 
     *complexity -= children.len() + 1;
-
-    let (container_space, _) = direction.swap(bounds.dimensions.width, bounds.dimensions.width);
-    let (width, height) = direction.swap(Collapse, Fixed(container_space));
+    let (width, height) = direction.swap(Collapse, Stretch);
 
     ElementBuilder::new()
         .directional(Directional {
@@ -65,6 +58,7 @@ pub fn random_directional_list(bounds: Rect, complexity: &mut usize) -> Element 
             spacing: 0,
         })
         .sizing(width, height)
+        .children(children)
         .build()
 }
 

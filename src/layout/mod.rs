@@ -1,6 +1,3 @@
-#[cfg(test)]
-mod mock;
-
 mod calculated;
 mod common;
 mod dimension;
@@ -12,6 +9,7 @@ mod rect;
 pub use common::*;
 pub use dimension::*;
 pub use directional::*;
+pub use element::*;
 pub use rect::*;
 
 #[cfg(test)]
@@ -22,9 +20,10 @@ mod test {
         common::{Direction::*, SizingUnit::*},
         directional::Directional,
         element::ElementBuilder,
-        mock::random_directional_list,
         rect::Rect,
     };
+
+    use crate::mock::layout::*;
 
     #[test]
     fn computes_complex_directional_layout() {
