@@ -23,18 +23,17 @@ impl Direction {
     }
 }
 
-pub type Int = u32;
 pub type Float = f32;
 
 #[derive(PartialEq)]
 pub enum SizingUnit {
-    Fixed(Int),
+    Fixed(Float),
     Collapse,
     Stretch,
 }
 
 impl SizingUnit {
-    pub fn calculate(&self, min: Int, max: Int) -> Int {
+    pub fn calculate(&self, min: Float, max: Float) -> Float {
         match self {
             SizingUnit::Fixed(a) => *a,
             SizingUnit::Stretch => max,
@@ -50,7 +49,7 @@ impl SizingUnit {
         }
     }
 
-    pub fn fixed(&self) -> Result<u32, &str> {
+    pub fn fixed(&self) -> Result<Float, &str> {
         match self {
             SizingUnit::Fixed(v) => Ok(*v),
             _ => Err("Attempt to get fixed value on dynamic unit"),
@@ -73,7 +72,7 @@ impl Sizing {
 
     // This is used when the content is unknown, such as with a childless element
     pub fn calculate_without_content(&self, bounds: Dimensions) -> Dimensions {
-        self.calculate(Dimensions::new(0, 0), bounds)
+        self.calculate(Dimensions::new(0.0, 0.0), bounds)
     }
 
     pub fn fixed(&self) -> Result<Dimensions, &str> {

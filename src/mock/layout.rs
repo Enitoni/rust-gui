@@ -21,7 +21,9 @@ pub fn random_directional_list(bounds: Rect, complexity: &mut usize) -> Element 
     let mut rng = thread_rng();
 
     let direction = random_direction();
-    let space = &rng.gen_range(1..4) * 5;
+
+    let spacing = rng.gen_range(2..4) as f32 * 8.0;
+    let space = rng.gen_range(1..4) as f32 * 5.0;
 
     let count = {
         let available_space = match &direction {
@@ -29,7 +31,7 @@ pub fn random_directional_list(bounds: Rect, complexity: &mut usize) -> Element 
             Vertical => bounds.dimensions.height,
         };
 
-        let max_count = (available_space as f32 / space as f32).floor() as usize;
+        let max_count = (available_space / space).floor() as usize;
         max_count.min(*complexity)
     };
 
@@ -41,7 +43,7 @@ pub fn random_directional_list(bounds: Rect, complexity: &mut usize) -> Element 
         let element = ElementBuilder::new()
             .directional(Directional {
                 direction,
-                spacing: 0,
+                spacing: 0.0,
             })
             .sizing(width, height)
             .build();
@@ -53,10 +55,7 @@ pub fn random_directional_list(bounds: Rect, complexity: &mut usize) -> Element 
     let (width, height) = direction.swap(Collapse, Stretch);
 
     ElementBuilder::new()
-        .directional(Directional {
-            direction,
-            spacing: 0,
-        })
+        .directional(Directional { direction, spacing })
         .sizing(width, height)
         .children(children)
         .build()

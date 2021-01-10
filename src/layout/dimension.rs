@@ -1,27 +1,23 @@
 use std::fmt;
 
-use super::common::{Float, Int};
+use super::common::Float;
 
 #[derive(Clone, Copy)]
 pub struct Dimensions {
-    pub width: Int,
-    pub height: Int,
+    pub width: Float,
+    pub height: Float,
 }
 
 impl Dimensions {
-    pub fn new(width: Int, height: Int) -> Dimensions {
+    pub fn new(width: Float, height: Float) -> Dimensions {
         Dimensions { width, height }
     }
 
-    pub fn to_float(&self) -> (Float, Float) {
-        (self.width as Float, self.height as Float)
-    }
-
-    pub fn to_tuple(&self) -> (Int, Int) {
+    pub fn to_tuple(&self) -> (Float, Float) {
         (self.width, self.height)
     }
 
-    pub fn add(&mut self, width: Int, height: Int) {
+    pub fn add(&mut self, width: Float, height: Float) {
         self.width += width;
         self.height += height;
     }

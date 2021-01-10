@@ -1,5 +1,3 @@
-use crate::ElementBuilder;
-
 use super::{
     calculated::CalculatedElement, common::*, dimension::Dimensions, element::Element, rect::Rect,
 };
@@ -10,7 +8,7 @@ pub struct Directional {
     pub direction: Direction,
 
     /// Spacing between children (by default 0)
-    pub spacing: Int,
+    pub spacing: Float,
 }
 
 impl Directional {
@@ -20,7 +18,7 @@ impl Directional {
 
         new_bounds.dimensions.occupy_with_direction(
             self.direction,
-            self.spacing * element.children().len() as u32,
+            self.spacing * element.children().len() as f32,
         );
 
         new_bounds
@@ -41,7 +39,7 @@ impl Directional {
     }
 
     fn calculate_childless(&self, element: &Element, bounds: Option<Rect>) -> CalculatedElement {
-        let target = bounds.unwrap_or(Rect::new(0, 0, 0.0, 0.0));
+        let target = bounds.unwrap_or(Rect::new(0.0, 0.0, 0.0, 0.0));
 
         let calculated = element
             .sizing()
@@ -57,7 +55,7 @@ impl Directional {
         let sorted_indices = sorted_child_indices(self.direction, children);
 
         let mut indices_to_correct: Vec<usize> = Vec::with_capacity(sorted_indices.len());
-        let mut accumulated_space = Dimensions::new(0, 0);
+        let mut accumulated_space = Dimensions::new(0.0, 0.0);
 
         let mut calculated_children: Vec<Option<CalculatedElement>> =
             Vec::with_capacity(children.len());
@@ -182,13 +180,13 @@ trait DirectionalDimensions {
         &mut self,
         secondary: &SizingUnit,
         direction: &Direction,
-        x: Int,
-        y: Int,
+        x: Float,
+        y: Float,
     );
 
-    fn occupy_with_direction(&mut self, direction: Direction, space_to_occupy: Int);
+    fn occupy_with_direction(&mut self, direction: Direction, space_to_occupy: Float);
 
-    fn diff_with_direction(&self, direction: Direction, bounds: Dimensions) -> (Int, Int);
+    fn diff_with_direction(&self, direction: Direction, bounds: Dimensions) -> (Float, Float);
 }
 
 impl DirectionalDimensions for Dimensions {
@@ -196,8 +194,8 @@ impl DirectionalDimensions for Dimensions {
         &mut self,
         secondary_unit: &SizingUnit,
         direction: &Direction,
-        width: Int,
-        height: Int,
+        width: Float,
+        height: Float,
     ) {
         let (directional, secondary) = direction.swap(&mut self.width, &mut self.height);
         let (x, y) = direction.swap(width, height);
@@ -212,12 +210,12 @@ impl DirectionalDimensions for Dimensions {
         }
     }
 
-    fn occupy_with_direction(&mut self, direction: Direction, space_to_occupy: Int) {
+    fn occupy_with_direction(&mut self, direction: Direction, space_to_occupy: Float) {
         let (directional, _) = direction.swap(&mut self.width, &mut self.height);
         *directional -= space_to_occupy;
     }
 
-    fn diff_with_direction(&self, direction: Direction, bounds: Dimensions) -> (Int, Int) {
+    fn diff_with_direction(&self, direction: Direction, bounds: Dimensions) -> (Float, Float) {
         let width = bounds.width;
         let height = bounds.height;
 
@@ -239,38 +237,38 @@ mod test {
 
     #[test]
     fn calculates_childless() {
-        let rect = Rect::new(100, 100, 0.0, 0.0);
+        let rect = Rect::new(100.0, 100.0, 0.0, 0.0);
 
         let a = ElementBuilder::new()
             .directional(Directional {
                 direction: Horizontal,
-                spacing: 0,
+                spacing: 0.0,
             })
-            .sizing(Fixed(50), Stretch)
+            .sizing(Fixed(50.0), Stretch)
             .build();
 
         let result = a.calculate(Some(rect));
 
-        assert_eq!(result.rect.dimensions.width, 50);
-        assert_eq!(result.rect.dimensions.height, 100);
+        assert_eq!(result.rect.dimensions.width, 50.0);
+        assert_eq!(result.rect.dimensions.height, 100.0);
     }
 
     #[test]
     fn calculates_collapse() {
-        let rect = Rect::new(200, 200, 0.0, 0.0);
+        let rect = Rect::new(200.0, 200.0, 0.0, 0.0);
 
         let child = ElementBuilder::new()
             .directional(Directional {
                 direction: Horizontal,
-                spacing: 0,
+                spacing: 0.0,
             })
-            .sizing(Fixed(50), Fixed(50))
+            .sizing(Fixed(50.0), Fixed(50.0))
             .build();
 
         let a = ElementBuilder::new()
             .directional(Directional {
                 direction: Vertical,
-                spacing: 0,
+                spacing: 0.0,
             })
             .sizing(Stretch, Collapse)
             .children(vec![child])
@@ -278,41 +276,41 @@ mod test {
 
         let result = a.calculate(Some(rect));
 
-        assert_eq!(result.rect.dimensions.width, 100);
-        assert_eq!(result.rect.dimensions.height, 50);
+        assert_eq!(result.rect.dimensions.width, 100.0);
+        assert_eq!(result.rect.dimensions.height, 50.0);
     }
 
     #[test]
     fn calculates_stretch() {
-        let rect = Rect::new(100, 100, 0.0, 0.0);
+        let rect = Rect::new(100.0, 100.0, 0.0, 0.0);
 
         let parent = ElementBuilder::new()
             .directional(Directional {
                 direction: Vertical,
-                spacing: 10,
+                spacing: 10.0,
             })
             .sizing(Collapse, Collapse)
             .children(vec![
                 ElementBuilder::new()
                     .directional(Directional {
                         direction: Vertical,
-                        spacing: 0,
+                        spacing: 0.0,
                     })
-                    .sizing(Stretch, Fixed(50))
+                    .sizing(Stretch, Fixed(50.0))
                     .build(),
                 ElementBuilder::new()
                     .directional(Directional {
                         direction: Vertical,
-                        spacing: 0,
+                        spacing: 0.0,
                     })
-                    .sizing(Fixed(90), Fixed(50))
+                    .sizing(Fixed(90.0), Fixed(50.0))
                     .build(),
                 ElementBuilder::new()
                     .directional(Directional {
                         direction: Vertical,
-                        spacing: 0,
+                        spacing: 0.0,
                     })
-                    .sizing(Fixed(80), Fixed(50))
+                    .sizing(Fixed(80.0), Fixed(50.0))
                     .build(),
             ])
             .build();
@@ -322,34 +320,34 @@ mod test {
 
         println!("{:?}", result);
 
-        assert_eq!(result.rect.dimensions.width, 90);
-        assert_eq!(child.rect.dimensions.width, 90);
+        assert_eq!(result.rect.dimensions.width, 90.0);
+        assert_eq!(child.rect.dimensions.width, 90.0);
     }
 
     #[test]
     fn calculates_spacing() {
-        let rect = Rect::new(200, 200, 0.0, 0.0);
+        let rect = Rect::new(200.0, 200.0, 0.0, 0.0);
 
         let a = ElementBuilder::new()
             .directional(Directional {
                 direction: Horizontal,
-                spacing: 0,
+                spacing: 0.0,
             })
-            .sizing(Fixed(50), Fixed(50))
+            .sizing(Fixed(50.0), Fixed(50.0))
             .build();
 
         let b = ElementBuilder::new()
             .directional(Directional {
                 direction: Horizontal,
-                spacing: 0,
+                spacing: 0.0,
             })
-            .sizing(Fixed(50), Fixed(50))
+            .sizing(Fixed(50.0), Fixed(50.0))
             .build();
 
         let parent = ElementBuilder::new()
             .directional(Directional {
                 direction: Vertical,
-                spacing: 10,
+                spacing: 10.0,
             })
             .sizing(Stretch, Collapse)
             .children(vec![a, b])
@@ -357,7 +355,7 @@ mod test {
 
         let result = parent.calculate(Some(rect));
 
-        assert_eq!(result.rect.dimensions.width, 100);
-        assert_eq!(result.rect.dimensions.height, 50);
+        assert_eq!(result.rect.dimensions.width, 100.0);
+        assert_eq!(result.rect.dimensions.height, 50.0);
     }
 }

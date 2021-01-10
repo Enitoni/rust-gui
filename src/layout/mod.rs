@@ -27,16 +27,16 @@ mod test {
 
     #[test]
     fn computes_complex_directional_layout() {
-        let rect = Rect::new(5000, 5000, 0.0, 0.0);
+        let rect = Rect::new(5000.0, 5000.0, 0.0, 0.0);
 
-        let mut complexity: usize = 200;
+        let mut complexity: usize = 100;
 
         let list = random_directional_list(rect.clone(), &mut complexity);
 
         let parent = ElementBuilder::new()
             .directional(Directional {
                 direction: Horizontal,
-                spacing: 0,
+                spacing: 0.0,
             })
             .sizing(Collapse, Collapse)
             .children(vec![list])
