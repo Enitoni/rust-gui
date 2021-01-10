@@ -26,10 +26,6 @@ impl Directional {
         }
     }
 
-    fn calculate_directional_child() {
-        // calculate with and height here
-    }
-
     fn calculate_childless(&self, element: &Element, bounds: Option<Rect>) -> CalculatedElement {
         let target = bounds.unwrap_or(Rect::new(0, 0, 0.0, 0.0));
 
