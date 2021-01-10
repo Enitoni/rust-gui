@@ -27,43 +27,43 @@ pub type Int = u32;
 pub type Float = f32;
 
 #[derive(PartialEq)]
-pub enum FlexibleUnit {
+pub enum SizingUnit {
     Fixed(Int),
     Collapse,
     Stretch,
 }
 
-impl FlexibleUnit {
+impl SizingUnit {
     pub fn calculate(&self, min: Int, max: Int) -> Int {
         match self {
-            FlexibleUnit::Fixed(a) => *a,
-            FlexibleUnit::Stretch => max,
-            FlexibleUnit::Collapse => min,
+            SizingUnit::Fixed(a) => *a,
+            SizingUnit::Stretch => max,
+            SizingUnit::Collapse => min,
         }
     }
 
     pub fn index(&self) -> u32 {
         match self {
-            FlexibleUnit::Fixed(_) => 0,
-            FlexibleUnit::Collapse => 1,
-            FlexibleUnit::Stretch => 2,
+            SizingUnit::Fixed(_) => 0,
+            SizingUnit::Collapse => 1,
+            SizingUnit::Stretch => 2,
         }
     }
 
     pub fn fixed(&self) -> Result<u32, &str> {
         match self {
-            FlexibleUnit::Fixed(v) => Ok(*v),
+            SizingUnit::Fixed(v) => Ok(*v),
             _ => Err("Attempt to get fixed value on dynamic unit"),
         }
     }
 }
 
-pub struct FlexibleDimensions {
-    pub width: FlexibleUnit,
-    pub height: FlexibleUnit,
+pub struct Sizing {
+    pub width: SizingUnit,
+    pub height: SizingUnit,
 }
 
-impl FlexibleDimensions {
+impl Sizing {
     pub fn calculate(&self, content: Dimensions, bounds: Dimensions) -> Dimensions {
         Dimensions {
             width: self.width.calculate(content.width, bounds.width),

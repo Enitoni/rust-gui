@@ -1,11 +1,11 @@
 #[cfg(test)]
 mod mock;
 
-mod common;
-mod directional;
-
 mod calculated;
+mod common;
 mod dimension;
+mod directional;
+mod element;
 mod position;
 mod rect;
 
@@ -14,36 +14,17 @@ use directional::*;
 
 use self::{calculated::CalculatedElement, rect::Rect};
 
-enum ElementKind {
-    Directional(Directional),
-}
-
-pub struct Element {
-    kind: ElementKind,
-    children: Vec<Element>,
-    dimensions: FlexibleDimensions,
-}
-
-impl Element {
-    fn calculate(&self, bounds: Option<Rect>) -> CalculatedElement {
-        match &self.kind {
-            ElementKind::Directional(l) => l.calculate(&self, bounds),
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
     use std::time::Instant;
 
     use super::{
-        common::{Direction::*, FlexibleDimensions, FlexibleUnit::*},
+        common::{Direction::*, Sizing, SizingUnit::*},
         dimension::Dimensions,
         directional::Directional,
+        element::{Element, ElementBuilder, ElementKind::*},
         mock::random_directional_list,
         rect::Rect,
-        Element,
-        ElementKind::*,
     };
 
     #[test]
@@ -54,17 +35,14 @@ mod test {
 
         let list = random_directional_list(rect.clone(), &mut complexity);
 
-        let parent = Element {
-            dimensions: FlexibleDimensions {
-                width: Collapse,
-                height: Collapse,
-            },
-            kind: Directional(Directional {
+        let parent = ElementBuilder::new()
+            .directional(Directional {
                 direction: Horizontal,
                 spacing: 0,
-            }),
-            children: vec![list],
-        };
+            })
+            .sizing(Collapse, Collapse)
+            .children(vec![list])
+            .build();
 
         let iterations = 5000;
         let mut nodes: usize = 0;

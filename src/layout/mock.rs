@@ -1,12 +1,11 @@
 use rand::*;
 
 use super::{
-    common::{Direction::*, FlexibleUnit::*, *},
+    common::{Direction::*, SizingUnit::*, *},
     dimension::Dimensions,
     directional::Directional,
+    element::{Element, ElementBuilder, ElementKind::*},
     rect::Rect,
-    Element,
-    ElementKind::*,
 };
 
 pub fn random_dimension(max: Int) -> Int {
@@ -44,14 +43,13 @@ pub fn random_directional_list(bounds: Rect, complexity: &mut usize) -> Element 
     for _ in 0..count - 1 {
         let (width, height) = direction.swap(Fixed(space), Stretch);
 
-        let element = Element {
-            kind: Directional(Directional {
+        let element = ElementBuilder::new()
+            .directional(Directional {
                 direction,
                 spacing: 0,
-            }),
-            dimensions: FlexibleDimensions { width, height },
-            children: Vec::new(),
-        };
+            })
+            .sizing(width, height)
+            .build();
 
         children.push(element);
     }
@@ -61,14 +59,13 @@ pub fn random_directional_list(bounds: Rect, complexity: &mut usize) -> Element 
     let (container_space, _) = direction.swap(bounds.dimensions.width, bounds.dimensions.width);
     let (width, height) = direction.swap(Collapse, Fixed(container_space));
 
-    Element {
-        kind: Directional(Directional {
+    ElementBuilder::new()
+        .directional(Directional {
             direction,
             spacing: 0,
-        }),
-        dimensions: FlexibleDimensions { width, height },
-        children,
-    }
+        })
+        .sizing(width, height)
+        .build()
 }
 
 pub fn random_directional(bounds: Dimensions, complexity: &mut usize) {
@@ -79,8 +76,6 @@ pub fn random_directional(bounds: Dimensions, complexity: &mut usize) {
 
     let child_count = rng.gen_range(1..=3.min(*complexity));
     let stretch_index = rng.gen_range(0..=child_count);
-
-    fn child() {}
 }
 
 pub fn create_random_element() {}

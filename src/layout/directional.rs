@@ -1,4 +1,6 @@
-use super::{calculated::CalculatedElement, common::*, dimension::Dimensions, rect::Rect, Element};
+use super::{
+    calculated::CalculatedElement, common::*, dimension::Dimensions, element::Element, rect::Rect,
+};
 
 /// Represents a layout of child elements in a given direction, with a given spacing
 pub struct Directional {
@@ -32,19 +34,20 @@ impl Directional {
         let target = bounds.unwrap_or(Rect::from(Dimensions::from(0, 0)));
 
         let calculated = element
-            .dimensions
+            .sizing()
             .calculate_without_content(target.dimensions);
 
         CalculatedElement::empty(calculated)
     }
 
     fn calculate_childful(&self, element: &Element, bounds: Option<Rect>) -> CalculatedElement {
-        let Element { children, .. } = element;
+        let children = element.children();
 
         let bounds = match bounds {
             Some(x) => x.dimensions,
             None => {
-                let dimensions = element.dimensions.fixed();
+                let sizing = element.sizing();
+                let dimensions = sizing.fixed();
 
                 match dimensions {
                     Ok(x) => x,
@@ -64,32 +67,23 @@ impl Directional {
         // Fill the vec with nothing so we can assign later
         calculated_children.resize_with(children.len(), || None);
 
-        // TODO: Clean this up, should calculate both flexible height and width
-        // Problem:
-        // Directional unit is sorted, however the secondary cannot be calculated correctly
-        // because a child might have a secondary unit out of order.
-        // Possible solutions:
-        // - Calculate both width and height separately (wasteful)
-        // - Have two functions, one for directional, another for secondary
-        //   and then assemble the children after getting both (problem is getting the result from children)
-        // - Make the sorting function sort both directions at the same time (returning a list of tuples)
-
         for index in sorted_indices {
             let child = &children[index];
+            let child_sizing = child.sizing();
 
             let (unit, secondary) = self
                 .direction
-                .swap(&child.dimensions.width, &child.dimensions.height);
+                .swap(&child_sizing.width, &child_sizing.height);
 
             let calculated_child = match unit {
-                FlexibleUnit::Stretch => {
+                SizingUnit::Stretch => {
                     let (width, height) =
                         accumulated_space.diff_with_direction(self.direction, bounds);
 
                     child.calculate(Some(Rect::from(Dimensions::from(width, height))))
                 }
                 _ => {
-                    let rect = Rect::from(child.dimensions.calculate_without_content(bounds));
+                    let rect = Rect::from(child.sizing().calculate_without_content(bounds));
                     child.calculate(Some(rect))
                 }
             };
@@ -103,14 +97,14 @@ impl Directional {
 
             // The child has secondary units that
             // cannot be calculated before everything else
-            if unit != secondary && *secondary == FlexibleUnit::Stretch {
+            if unit != secondary && *secondary == SizingUnit::Stretch {
                 indices_to_correct.push(index);
             }
 
             calculated_children[index] = Some(calculated_child);
         }
 
-        let calculated_dimensions = element.dimensions.calculate(accumulated_space, bounds);
+        let calculated_dimensions = element.sizing().calculate(accumulated_space, bounds);
 
         // Re-calculate children with stretchy secondary sizing
         // TODO: Clean this up if possible.
@@ -147,7 +141,7 @@ impl Directional {
     }
 
     pub fn calculate(&self, element: &Element, dimensions: Option<Rect>) -> CalculatedElement {
-        if element.children.len() > 0 {
+        if element.children().len() > 0 {
             return self.calculate_childful(element, dimensions);
         }
 
@@ -163,13 +157,13 @@ fn sorted_child_indices(direction: Direction, children: &Vec<Element>) -> Vec<us
     let mut stretch: Vec<usize> = Vec::new();
 
     for (i, child) in children.iter().enumerate() {
-        let FlexibleDimensions { width, height } = &child.dimensions;
+        let Sizing { width, height } = &child.sizing();
         let (directional, _) = direction.swap(&width, &height);
 
         match directional {
-            FlexibleUnit::Fixed(_) => fixed.push(i),
-            FlexibleUnit::Collapse => collapse.push(i),
-            FlexibleUnit::Stretch => stretch.push(i),
+            SizingUnit::Fixed(_) => fixed.push(i),
+            SizingUnit::Collapse => collapse.push(i),
+            SizingUnit::Stretch => stretch.push(i),
         }
     }
 
@@ -183,7 +177,7 @@ fn sorted_child_indices(direction: Direction, children: &Vec<Element>) -> Vec<us
 trait DirectionalDimensions {
     fn allocate_with_direction(
         &mut self,
-        secondary: &FlexibleUnit,
+        secondary: &SizingUnit,
         direction: &Direction,
         x: Int,
         y: Int,
@@ -195,7 +189,7 @@ trait DirectionalDimensions {
 impl DirectionalDimensions for Dimensions {
     fn allocate_with_direction(
         &mut self,
-        secondary_unit: &FlexibleUnit,
+        secondary_unit: &SizingUnit,
         direction: &Direction,
         width: Int,
         height: Int,
@@ -206,7 +200,7 @@ impl DirectionalDimensions for Dimensions {
         *directional += x;
 
         match secondary_unit {
-            FlexibleUnit::Stretch => {}
+            SizingUnit::Stretch => {}
             _ => {
                 *secondary = y.max(*secondary);
             }
@@ -230,8 +224,12 @@ impl DirectionalDimensions for Dimensions {
 #[cfg(test)]
 mod test {
     use crate::layout::{
-        common::FlexibleDimensions, dimension::Dimensions, rect::Rect, Direction::*, Element,
-        ElementKind::*, FlexibleUnit::*,
+        common::Sizing,
+        dimension::Dimensions,
+        element::{Element, ElementBuilder, ElementKind::*},
+        rect::Rect,
+        Direction::*,
+        SizingUnit::*,
     };
 
     use super::Directional;
@@ -240,17 +238,13 @@ mod test {
     fn calculates_childless() {
         let rect = Rect::from(Dimensions::from(100, 100));
 
-        let a = Element {
-            kind: Directional(Directional {
+        let a = ElementBuilder::new()
+            .directional(Directional {
                 direction: Horizontal,
                 spacing: 0,
-            }),
-            dimensions: FlexibleDimensions {
-                width: Fixed(50),
-                height: Stretch,
-            },
-            children: vec![],
-        };
+            })
+            .sizing(Fixed(50), Stretch)
+            .build();
 
         let result = a.calculate(Some(rect));
 
@@ -262,27 +256,22 @@ mod test {
     fn calculates_collapse() {
         let rect = Rect::from(Dimensions::from(100, 100));
 
-        let a = Element {
-            kind: Directional(Directional {
+        let child = ElementBuilder::new()
+            .directional(Directional {
+                direction: Horizontal,
+                spacing: 0,
+            })
+            .sizing(Fixed(50), Fixed(50))
+            .build();
+
+        let a = ElementBuilder::new()
+            .directional(Directional {
                 direction: Vertical,
                 spacing: 0,
-            }),
-            dimensions: FlexibleDimensions {
-                width: Stretch,
-                height: Collapse,
-            },
-            children: vec![Element {
-                kind: Directional(Directional {
-                    direction: Horizontal,
-                    spacing: 0,
-                }),
-                dimensions: FlexibleDimensions {
-                    width: Fixed(50),
-                    height: Fixed(50),
-                },
-                children: vec![],
-            }],
-        };
+            })
+            .sizing(Stretch, Collapse)
+            .children(vec![child])
+            .build();
 
         let result = a.calculate(Some(rect));
 
@@ -294,53 +283,38 @@ mod test {
     fn calculates_stretch() {
         let rect = Rect::from(Dimensions::from(100, 100));
 
-        let a = Element {
-            kind: Directional(Directional {
+        let parent = ElementBuilder::new()
+            .directional(Directional {
                 direction: Vertical,
                 spacing: 0,
-            }),
-            dimensions: FlexibleDimensions {
-                width: Collapse,
-                height: Collapse,
-            },
-            children: vec![
-                Element {
-                    kind: Directional(Directional {
+            })
+            .sizing(Collapse, Collapse)
+            .children(vec![
+                ElementBuilder::new()
+                    .directional(Directional {
                         direction: Vertical,
                         spacing: 0,
-                    }),
-                    dimensions: FlexibleDimensions {
-                        width: Stretch,
-                        height: Fixed(50),
-                    },
-                    children: vec![],
-                },
-                Element {
-                    kind: Directional(Directional {
-                        direction: Horizontal,
+                    })
+                    .sizing(Stretch, Fixed(50))
+                    .build(),
+                ElementBuilder::new()
+                    .directional(Directional {
+                        direction: Vertical,
                         spacing: 0,
-                    }),
-                    dimensions: FlexibleDimensions {
-                        width: Fixed(90),
-                        height: Fixed(50),
-                    },
-                    children: vec![],
-                },
-                Element {
-                    kind: Directional(Directional {
-                        direction: Horizontal,
+                    })
+                    .sizing(Fixed(90), Fixed(50))
+                    .build(),
+                ElementBuilder::new()
+                    .directional(Directional {
+                        direction: Vertical,
                         spacing: 0,
-                    }),
-                    dimensions: FlexibleDimensions {
-                        width: Fixed(80),
-                        height: Fixed(50),
-                    },
-                    children: vec![],
-                },
-            ],
-        };
+                    })
+                    .sizing(Fixed(80), Fixed(50))
+                    .build(),
+            ])
+            .build();
 
-        let result = a.calculate(Some(rect));
+        let result = parent.calculate(Some(rect));
         let child = &result.children[0];
 
         println!("{:?}", result);
