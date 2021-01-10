@@ -92,6 +92,7 @@ impl Directional {
                     let rect = Rect::from_dimensions(
                         child.sizing().calculate_without_content(inner.dimensions),
                     );
+
                     child.calculate(Some(rect))
                 }
             };
