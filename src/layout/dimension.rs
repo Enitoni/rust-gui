@@ -17,6 +17,10 @@ impl Dimensions {
         (self.width as Float, self.height as Float)
     }
 
+    pub fn to_tuple(&self) -> (Int, Int) {
+        (self.width, self.height)
+    }
+
     pub fn add(&mut self, width: Int, height: Int) {
         self.width += width;
         self.height += height;
