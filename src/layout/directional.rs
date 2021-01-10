@@ -1,3 +1,5 @@
+use crate::ElementBuilder;
+
 use super::{
     calculated::CalculatedElement, common::*, dimension::Dimensions, element::Element, rect::Rect,
 };
@@ -12,6 +14,18 @@ pub struct Directional {
 }
 
 impl Directional {
+    /// Returns a new Rect with padding and spacing accounted for
+    fn occupy_bounds(&self, element: &Element, bounds: Rect) -> Rect {
+        let mut new_bounds = bounds.clone();
+
+        new_bounds.dimensions.occupy_with_direction(
+            self.direction,
+            self.spacing * element.children().len() as u32,
+        );
+
+        new_bounds
+    }
+
     fn calculate_child_positions(&self, children: &mut [CalculatedElement]) {
         let mut offset = 0.0;
 
@@ -22,7 +36,7 @@ impl Directional {
             let (space, _) = self.direction.swap(width, height);
 
             child.rect.translate(x, y);
-            offset += space as Float;
+            offset += space as Float + self.spacing as Float;
         }
     }
 
@@ -39,19 +53,7 @@ impl Directional {
     fn calculate_childful(&self, element: &Element, bounds: Option<Rect>) -> CalculatedElement {
         let children = element.children();
 
-        let bounds = match bounds {
-            Some(x) => x.dimensions,
-            None => {
-                let sizing = element.sizing();
-                let dimensions = sizing.fixed();
-
-                match dimensions {
-                    Ok(x) => x,
-                    Err(_) => panic!("Cannot get bounds for directional element"),
-                }
-            }
-        };
-
+        let bounds = self.occupy_bounds(element, bounds.unwrap());
         let sorted_indices = sorted_child_indices(self.direction, children);
 
         let mut indices_to_correct: Vec<usize> = Vec::with_capacity(sorted_indices.len());
@@ -74,13 +76,14 @@ impl Directional {
             let calculated_child = match unit {
                 SizingUnit::Stretch => {
                     let (width, height) =
-                        accumulated_space.diff_with_direction(self.direction, bounds);
+                        accumulated_space.diff_with_direction(self.direction, bounds.dimensions);
 
                     child.calculate(Some(Rect::new(width, height, 0.0, 0.0)))
                 }
                 _ => {
-                    let rect =
-                        Rect::from_dimensions(child.sizing().calculate_without_content(bounds));
+                    let rect = Rect::from_dimensions(
+                        child.sizing().calculate_without_content(bounds.dimensions),
+                    );
                     child.calculate(Some(rect))
                 }
             };
@@ -101,7 +104,9 @@ impl Directional {
             calculated_children[index] = Some(calculated_child);
         }
 
-        let calculated_dimensions = element.sizing().calculate(accumulated_space, bounds);
+        let calculated_dimensions = element
+            .sizing()
+            .calculate(accumulated_space, bounds.dimensions);
 
         // Re-calculate children with stretchy secondary sizing
         // TODO: Clean this up if possible.
@@ -181,6 +186,8 @@ trait DirectionalDimensions {
         y: Int,
     );
 
+    fn occupy_with_direction(&mut self, direction: Direction, space_to_occupy: Int);
+
     fn diff_with_direction(&self, direction: Direction, bounds: Dimensions) -> (Int, Int);
 }
 
@@ -203,6 +210,11 @@ impl DirectionalDimensions for Dimensions {
                 *secondary = y.max(*secondary);
             }
         }
+    }
+
+    fn occupy_with_direction(&mut self, direction: Direction, space_to_occupy: Int) {
+        let (directional, _) = direction.swap(&mut self.width, &mut self.height);
+        *directional -= space_to_occupy;
     }
 
     fn diff_with_direction(&self, direction: Direction, bounds: Dimensions) -> (Int, Int) {
@@ -277,7 +289,7 @@ mod test {
         let parent = ElementBuilder::new()
             .directional(Directional {
                 direction: Vertical,
-                spacing: 0,
+                spacing: 10,
             })
             .sizing(Collapse, Collapse)
             .children(vec![
@@ -312,5 +324,40 @@ mod test {
 
         assert_eq!(result.rect.dimensions.width, 90);
         assert_eq!(child.rect.dimensions.width, 90);
+    }
+
+    #[test]
+    fn calculates_spacing() {
+        let rect = Rect::new(200, 200, 0.0, 0.0);
+
+        let a = ElementBuilder::new()
+            .directional(Directional {
+                direction: Horizontal,
+                spacing: 0,
+            })
+            .sizing(Fixed(50), Fixed(50))
+            .build();
+
+        let b = ElementBuilder::new()
+            .directional(Directional {
+                direction: Horizontal,
+                spacing: 0,
+            })
+            .sizing(Fixed(50), Fixed(50))
+            .build();
+
+        let parent = ElementBuilder::new()
+            .directional(Directional {
+                direction: Vertical,
+                spacing: 10,
+            })
+            .sizing(Stretch, Collapse)
+            .children(vec![a, b])
+            .build();
+
+        let result = parent.calculate(Some(rect));
+
+        assert_eq!(result.rect.dimensions.width, 100);
+        assert_eq!(result.rect.dimensions.height, 50);
     }
 }
