@@ -1,29 +1,37 @@
-use crate::{Dimensions, Direction, Directional, Element, ElementBuilder, Float, Rect, SizingUnit};
+use crate::{Direction, Directional, Element, ElementBuilder, Float, SizingUnit};
 use Direction::*;
 use SizingUnit::*;
 
-pub fn directional(direction: Direction, width: SizingUnit, height: SizingUnit) -> ElementBuilder {
+pub fn directional(
+    direction: Direction,
+    width: SizingUnit,
+    height: SizingUnit,
+    spacing: Float,
+) -> ElementBuilder {
     ElementBuilder::new()
-        .directional(Directional {
-            direction,
-            spacing: 0.0,
-        })
+        .directional(Directional { direction, spacing })
         .sizing(width, height)
 }
 
 pub fn header() -> Element {
-    directional(Horizontal, Stretch, Fixed(60.0))
+    directional(Horizontal, Stretch, Fixed(60.), 16.)
         .children(vec![
-            directional(Horizontal, Fixed(150.0), Stretch).build(),
-            directional(Horizontal, Fixed(50.0), Stretch).build(),
-            directional(Horizontal, Fixed(100.0), Stretch).build(),
-            directional(Horizontal, Stretch, Stretch).build(),
-            directional(Horizontal, Fixed(60.0), Stretch).build(),
+            directional(Horizontal, Fixed(50.0), Stretch, 0.).build(),
+            directional(Horizontal, Fixed(50.0), Stretch, 0.).build(),
+            directional(Horizontal, Fixed(50.0), Stretch, 0.).build(),
+            directional(Horizontal, Stretch, Stretch, 0.).build(),
+            directional(Horizontal, Fixed(80.0), Stretch, 0.).build(),
         ])
-        .pad_all(0.0)
+        .pad_all(16.0)
         .build()
 }
 
+fn body() -> Element {
+    directional(Horizontal, Stretch, Stretch, 0.).build()
+}
+
 pub fn test_layout() -> Element {
-    header()
+    directional(Vertical, Stretch, Stretch, 0.)
+        .children(vec![header(), body()])
+        .build()
 }
