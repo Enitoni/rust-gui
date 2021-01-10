@@ -23,7 +23,7 @@ impl Directional {
 
         new_bounds.dimensions.occupy_with_direction(
             self.direction,
-            self.spacing * element.children().len() as f32,
+            self.spacing * (element.children().len() - 1) as f32,
         );
 
         new_bounds.dimensions.occupy_with_padding(element.padding());
@@ -105,16 +105,20 @@ impl Directional {
 
             // The child has secondary units that
             // cannot be calculated before everything else
-            if unit != secondary && *secondary == SizingUnit::Stretch {
+            if *secondary == SizingUnit::Stretch {
                 indices_to_correct.push(index);
             }
 
             calculated_children[index] = Some(calculated_child);
         }
 
-        let calculated_inner_dimensions = element
+        let mut calculated_inner_dimensions = element
             .sizing()
-            .calculate(accumulated_space, inner.dimensions);
+            .calculate(accumulated_space, outer.dimensions);
+
+        // Occupy this with padding, otherwise the
+        // non-directional will overflow
+        calculated_inner_dimensions.occupy_with_padding(&element.padding());
 
         // Re-calculate children with stretchy secondary sizing
         // TODO: Clean this up if possible.
@@ -230,14 +234,14 @@ impl DirectionalDimensions for Dimensions {
     }
 
     fn diff_with_direction(&self, direction: Direction, bounds: Dimensions) -> (Float, Float) {
-        let width = bounds.width;
-        let height = bounds.height;
+        let mut width = bounds.width;
+        let mut height = bounds.height;
 
-        let (mut _directional, mut _secondary) = direction.swap(width, height);
+        let (_directional, _secondary) = direction.swap(&mut width, &mut height);
         let (x, y) = direction.swap(self.width, self.height);
 
-        _directional -= x;
-        _secondary = y;
+        *_directional -= x;
+        *_secondary = y;
 
         (width, height)
     }
@@ -245,7 +249,10 @@ impl DirectionalDimensions for Dimensions {
 
 #[cfg(test)]
 mod test {
-    use crate::layout::{element::ElementBuilder, rect::Rect, Direction::*, SizingUnit::*};
+    use crate::{
+        layout::{element::ElementBuilder, rect::Rect, Direction::*, SizingUnit::*},
+        mock::layout::directional,
+    };
 
     use super::Directional;
 
@@ -298,78 +305,40 @@ mod test {
     fn calculates_stretch() {
         let rect = Rect::new(100.0, 100.0, 0.0, 0.0);
 
-        let parent = ElementBuilder::new()
-            .directional(Directional {
-                direction: Vertical,
-                spacing: 10.0,
-            })
-            .sizing(Collapse, Collapse)
+        let element = directional(Horizontal, Stretch, Collapse)
             .children(vec![
-                ElementBuilder::new()
-                    .directional(Directional {
-                        direction: Vertical,
-                        spacing: 0.0,
-                    })
-                    .sizing(Stretch, Fixed(50.0))
-                    .build(),
-                ElementBuilder::new()
-                    .directional(Directional {
-                        direction: Vertical,
-                        spacing: 0.0,
-                    })
-                    .sizing(Fixed(90.0), Fixed(50.0))
-                    .build(),
-                ElementBuilder::new()
-                    .directional(Directional {
-                        direction: Vertical,
-                        spacing: 0.0,
-                    })
-                    .sizing(Fixed(80.0), Fixed(50.0))
-                    .build(),
+                directional(Horizontal, Fixed(20.0), Stretch).build(),
+                directional(Horizontal, Fixed(20.0), Fixed(30.0)).build(),
+                directional(Horizontal, Stretch, Stretch).build(),
+                directional(Horizontal, Fixed(20.0), Stretch).build(),
             ])
             .build();
 
-        let result = parent.calculate(Some(rect));
-        let child = &result.children[0];
+        let result = element.calculate(Some(rect));
+        let child = &result.children[2];
 
-        println!("{:?}", result);
+        assert_eq!(result.rect.dimensions.height, 30.0);
 
-        assert_eq!(result.rect.dimensions.width, 90.0);
-        assert_eq!(child.rect.dimensions.width, 90.0);
+        // 20 * 3 = 40, so remaining width is 40
+        assert_eq!(child.rect.dimensions.width, 40.0);
+
+        // Child stretches to non-directional space
+        assert_eq!(child.rect.dimensions.height, 30.0);
     }
 
     #[test]
-    fn calculates_spacing() {
-        let rect = Rect::new(200.0, 200.0, 0.0, 0.0);
+    fn calculates_padding() {
+        let rect = Rect::new(100.0, 100.0, 0.0, 0.0);
 
-        let a = ElementBuilder::new()
-            .directional(Directional {
-                direction: Horizontal,
-                spacing: 0.0,
-            })
-            .sizing(Fixed(50.0), Fixed(50.0))
+        let element = directional(Horizontal, Stretch, Fixed(50.0))
+            .children(vec![directional(Horizontal, Stretch, Stretch).build()])
+            .pad_all(10.0)
             .build();
 
-        let b = ElementBuilder::new()
-            .directional(Directional {
-                direction: Horizontal,
-                spacing: 0.0,
-            })
-            .sizing(Fixed(50.0), Fixed(50.0))
-            .build();
+        let result = element.calculate(Some(rect));
+        let child = &result.children[0];
 
-        let parent = ElementBuilder::new()
-            .directional(Directional {
-                direction: Vertical,
-                spacing: 10.0,
-            })
-            .sizing(Stretch, Collapse)
-            .children(vec![a, b])
-            .build();
-
-        let result = parent.calculate(Some(rect));
-
-        assert_eq!(result.rect.dimensions.width, 100.0);
-        assert_eq!(result.rect.dimensions.height, 50.0);
+        assert_eq!(child.rect.dimensions.height, 50.0 - (10. * 2.0));
+        assert_eq!(child.rect.dimensions.width, 100.0 - (10. * 2.0));
     }
 }
