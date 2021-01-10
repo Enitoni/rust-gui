@@ -17,39 +17,21 @@ pub use rect::*;
 mod test {
     use std::time::Instant;
 
-    use super::{
-        common::{Direction::*, SizingUnit::*},
-        directional::Directional,
-        element::ElementBuilder,
-        rect::Rect,
-    };
-
-    use crate::mock::layout::*;
+    use super::rect::Rect;
+    use crate::mock::layout::test_layout;
 
     #[test]
     fn computes_complex_directional_layout() {
-        let rect = Rect::new(5000.0, 5000.0, 0.0, 0.0);
+        let rect = Rect::new(500.0, 500.0, 0.0, 0.0);
+        let layout = test_layout();
 
-        let mut complexity: usize = 100;
-
-        let list = random_directional_list(rect.clone(), &mut complexity);
-
-        let parent = ElementBuilder::new()
-            .directional(Directional {
-                direction: Horizontal,
-                spacing: 0.0,
-            })
-            .sizing(Collapse, Collapse)
-            .children(vec![list])
-            .build();
-
-        let iterations = 5000;
+        let iterations = 1;
         let mut nodes: usize = 0;
 
         let time = Instant::now();
 
         for i in 0..iterations {
-            let result = parent.calculate(Some(rect.clone()));
+            let result = layout.calculate(Some(rect.clone()));
 
             if i == 0 {
                 println!("{:#?}", result);
