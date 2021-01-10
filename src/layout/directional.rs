@@ -305,12 +305,12 @@ mod test {
     fn calculates_stretch() {
         let rect = Rect::new(100.0, 100.0, 0.0, 0.0);
 
-        let element = directional(Horizontal, Stretch, Collapse)
+        let element = directional(Horizontal, Stretch, Collapse, 0.)
             .children(vec![
-                directional(Horizontal, Fixed(20.0), Stretch).build(),
-                directional(Horizontal, Fixed(20.0), Fixed(30.0)).build(),
-                directional(Horizontal, Stretch, Stretch).build(),
-                directional(Horizontal, Fixed(20.0), Stretch).build(),
+                directional(Horizontal, Fixed(20.0), Stretch, 0.).build(),
+                directional(Horizontal, Fixed(20.0), Fixed(30.0), 0.).build(),
+                directional(Horizontal, Stretch, Stretch, 0.).build(),
+                directional(Horizontal, Fixed(20.0), Stretch, 0.).build(),
             ])
             .build();
 
@@ -330,8 +330,8 @@ mod test {
     fn calculates_padding() {
         let rect = Rect::new(100.0, 100.0, 0.0, 0.0);
 
-        let element = directional(Horizontal, Stretch, Fixed(50.0))
-            .children(vec![directional(Horizontal, Stretch, Stretch).build()])
+        let element = directional(Horizontal, Stretch, Fixed(50.0), 0.)
+            .children(vec![directional(Horizontal, Stretch, Stretch, 0.).build()])
             .pad_all(10.0)
             .build();
 
