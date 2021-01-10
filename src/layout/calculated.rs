@@ -12,7 +12,7 @@ pub struct CalculatedElement {
 impl CalculatedElement {
     pub fn empty(dimensions: Dimensions) -> CalculatedElement {
         CalculatedElement {
-            rect: Rect::from(dimensions),
+            rect: Rect::from_dimensions(dimensions),
             children: Vec::new(),
         }
     }

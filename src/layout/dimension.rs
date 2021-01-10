@@ -9,7 +9,7 @@ pub struct Dimensions {
 }
 
 impl Dimensions {
-    pub fn from(width: Int, height: Int) -> Dimensions {
+    pub fn new(width: Int, height: Int) -> Dimensions {
         Dimensions { width, height }
     }
 

@@ -31,7 +31,7 @@ impl Directional {
     }
 
     fn calculate_childless(&self, element: &Element, bounds: Option<Rect>) -> CalculatedElement {
-        let target = bounds.unwrap_or(Rect::from(Dimensions::from(0, 0)));
+        let target = bounds.unwrap_or(Rect::new(0, 0, 0.0, 0.0));
 
         let calculated = element
             .sizing()
@@ -59,7 +59,7 @@ impl Directional {
         let sorted_indices = sorted_child_indices(self.direction, children);
 
         let mut indices_to_correct: Vec<usize> = Vec::with_capacity(sorted_indices.len());
-        let mut accumulated_space = Dimensions::from(0, 0);
+        let mut accumulated_space = Dimensions::new(0, 0);
 
         let mut calculated_children: Vec<Option<CalculatedElement>> =
             Vec::with_capacity(children.len());
@@ -80,10 +80,11 @@ impl Directional {
                     let (width, height) =
                         accumulated_space.diff_with_direction(self.direction, bounds);
 
-                    child.calculate(Some(Rect::from(Dimensions::from(width, height))))
+                    child.calculate(Some(Rect::new(width, height, 0.0, 0.0)))
                 }
                 _ => {
-                    let rect = Rect::from(child.sizing().calculate_without_content(bounds));
+                    let rect =
+                        Rect::from_dimensions(child.sizing().calculate_without_content(bounds));
                     child.calculate(Some(rect))
                 }
             };
@@ -116,7 +117,8 @@ impl Directional {
                 None => panic!(),
             };
 
-            let new_calculation = child.calculate(Some(Rect::from(calculated_dimensions)));
+            let new_calculation =
+                child.calculate(Some(Rect::from_dimensions(calculated_dimensions)));
 
             let (_, new_secondary) = self.direction.swap(
                 new_calculation.rect.dimensions.width,
@@ -135,7 +137,7 @@ impl Directional {
         self.calculate_child_positions(&mut calculated_children);
 
         CalculatedElement {
-            rect: Rect::from(calculated_dimensions),
+            rect: Rect::from_dimensions(calculated_dimensions),
             children: calculated_children,
         }
     }
@@ -231,7 +233,7 @@ mod test {
 
     #[test]
     fn calculates_childless() {
-        let rect = Rect::from(Dimensions::from(100, 100));
+        let rect = Rect::new(100, 100, 0.0, 0.0);
 
         let a = ElementBuilder::new()
             .directional(Directional {
@@ -249,7 +251,7 @@ mod test {
 
     #[test]
     fn calculates_collapse() {
-        let rect = Rect::from(Dimensions::from(100, 100));
+        let rect = Rect::new(200, 200, 0.0, 0.0);
 
         let child = ElementBuilder::new()
             .directional(Directional {
@@ -276,7 +278,7 @@ mod test {
 
     #[test]
     fn calculates_stretch() {
-        let rect = Rect::from(Dimensions::from(100, 100));
+        let rect = Rect::new(100, 100, 0.0, 0.0);
 
         let parent = ElementBuilder::new()
             .directional(Directional {

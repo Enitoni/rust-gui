@@ -9,7 +9,7 @@ pub struct Position {
 }
 
 impl Position {
-    pub fn from(x: Float, y: Float) -> Position {
+    pub fn new(x: Float, y: Float) -> Position {
         Position { x, y }
     }
 
@@ -30,6 +30,10 @@ impl Position {
     pub fn translate(&mut self, x: Float, y: Float) {
         self.x = x;
         self.y = y;
+    }
+
+    pub fn to_tuple(&self) -> (Float, Float) {
+        (self.x, self.y)
     }
 }
 

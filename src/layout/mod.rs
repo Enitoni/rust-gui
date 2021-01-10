@@ -12,6 +12,7 @@ mod rect;
 pub use common::*;
 pub use dimension::*;
 pub use directional::*;
+pub use rect::*;
 
 #[cfg(test)]
 mod test {
@@ -19,7 +20,6 @@ mod test {
 
     use super::{
         common::{Direction::*, SizingUnit::*},
-        dimension::Dimensions,
         directional::Directional,
         element::ElementBuilder,
         mock::random_directional_list,
@@ -28,7 +28,7 @@ mod test {
 
     #[test]
     fn computes_complex_directional_layout() {
-        let rect = Rect::from(Dimensions::from(5000, 5000));
+        let rect = Rect::new(5000, 5000, 0.0, 0.0);
 
         let mut complexity: usize = 200;
 

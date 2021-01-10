@@ -73,7 +73,7 @@ impl Sizing {
 
     // This is used when the content is unknown, such as with a childless element
     pub fn calculate_without_content(&self, bounds: Dimensions) -> Dimensions {
-        self.calculate(Dimensions::from(0, 0), bounds)
+        self.calculate(Dimensions::new(0, 0), bounds)
     }
 
     pub fn fixed(&self) -> Result<Dimensions, &str> {
@@ -81,7 +81,7 @@ impl Sizing {
             let width = self.width.fixed()?;
             let height = self.height.fixed()?;
 
-            Ok(Dimensions::from(width, height))
+            Ok(Dimensions::new(width, height))
         };
 
         match result {

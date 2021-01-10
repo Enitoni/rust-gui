@@ -18,7 +18,7 @@ impl Element {
     pub fn calculate(&self, bounds: Option<Rect>) -> CalculatedElement {
         match &self.kind {
             ElementKind::Directional(l) => l.calculate(&self, bounds),
-            ElementKind::None => CalculatedElement::empty(Dimensions::from(0, 0)),
+            ElementKind::None => CalculatedElement::empty(Dimensions::new(0, 0)),
         }
     }
 

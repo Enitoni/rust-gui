@@ -14,10 +14,17 @@ pub struct Rect {
 }
 
 impl Rect {
-    pub fn from(dimensions: Dimensions) -> Rect {
+    pub fn new(width: Int, height: Int, x: Float, y: Float) -> Rect {
+        Rect {
+            dimensions: Dimensions::new(width, height),
+            position: Position::new(x, y),
+        }
+    }
+
+    pub fn from_dimensions(dimensions: Dimensions) -> Rect {
         Rect {
             dimensions,
-            position: Position::from(0.0, 0.0),
+            position: Position::new(0.0, 0.0),
         }
     }
 
@@ -33,7 +40,7 @@ impl Rect {
         let (width, height) = self.dimensions.to_float();
         let (target_width, target_height) = dimensions.to_float();
 
-        Position::from(
+        Position::new(
             width / 2.0 - target_width / 2.0,
             height / 2.0 - target_height / 2.0,
         )
@@ -41,6 +48,15 @@ impl Rect {
 
     pub fn translate(&mut self, x: Float, y: Float) {
         self.position.translate(x, y)
+    }
+
+    /// Returns a tuple of the rect's values
+    /// (width, height, x, y)
+    pub fn to_tuple(&self) -> (Float, Float, Float, Float) {
+        let (width, height) = self.dimensions.to_float();
+        let (x, y) = self.position.to_tuple();
+
+        (width, height, x, y)
     }
 }
 
@@ -51,8 +67,8 @@ mod tests {
 
     #[test]
     fn it_centers() {
-        let a = Rect::from(Dimensions::from(2, 2));
-        let b = Dimensions::from(1, 1);
+        let a = Rect::new(2, 2, 0.0, 0.0);
+        let b = Dimensions::new(1, 1);
 
         let result = a.center(b);
 
