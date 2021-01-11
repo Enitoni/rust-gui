@@ -88,15 +88,6 @@ impl Directional {
                     let (width, height) =
                         accumulated_space.diff_with_direction(self.direction, inner.dimensions);
 
-                    dbg!(
-                        child.label(),
-                        accumulated_space,
-                        &outer,
-                        width,
-                        height,
-                        inner.dimensions
-                    );
-
                     child.calculate(Some(Rect::new(width, height, 0.0, 0.0)))
                 }
                 _ => {
