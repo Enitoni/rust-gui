@@ -40,7 +40,18 @@ fn content() -> Element {
         .build()
 }
 
-fn sidebar() -> Element {
+fn server_sidebar() -> Element {
+    let children = (0..7)
+        .map(|_| directional(Horizontal, Fixed(40.), Fixed(40.), 0.).build())
+        .collect();
+
+    directional(Vertical, Collapse, Stretch, 16.)
+        .children(children)
+        .pad_all(16.)
+        .build()
+}
+
+fn user_sidebar() -> Element {
     directional(Vertical, Fixed(320.0), Stretch, 24.)
         .label("sidebar")
         .pad_all(16.)
@@ -50,9 +61,8 @@ fn sidebar() -> Element {
 
 fn user() -> Element {
     let mut rng = thread_rng();
-    let range = &rng.gen_range(2..=6);
 
-    let children = (0..*range)
+    let children = (0..2)
         .map(|_| {
             let width = &rng.gen_range(0.2..1.0);
 
@@ -73,7 +83,7 @@ fn user() -> Element {
 fn body() -> Element {
     directional(Horizontal, Stretch, Stretch, 0.)
         .label("body")
-        .children(vec![content(), sidebar()])
+        .children(vec![server_sidebar(), content(), user_sidebar()])
         .build()
 }
 
