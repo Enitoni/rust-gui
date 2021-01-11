@@ -3,16 +3,19 @@ use super::{
     padding::Padding, rect::Rect,
 };
 
+#[derive(Debug)]
 pub enum ElementKind {
     Directional(Directional),
     None,
 }
 
+#[derive(Debug)]
 pub struct Element {
     kind: ElementKind,
     sizing: Sizing,
     padding: Padding,
     children: Vec<Element>,
+    label: Option<String>,
 }
 
 impl Element {
@@ -34,6 +37,10 @@ impl Element {
     pub fn padding(&self) -> &Padding {
         &self.padding
     }
+
+    pub fn label(&self) -> Option<&String> {
+        self.label.as_ref()
+    }
 }
 
 pub struct ElementBuilder {
@@ -41,6 +48,7 @@ pub struct ElementBuilder {
     sizing: Sizing,
     padding: Padding,
     children: Vec<Element>,
+    label: Option<String>,
 }
 
 impl ElementBuilder {
@@ -53,7 +61,13 @@ impl ElementBuilder {
                 width: SizingUnit::Collapse,
                 height: SizingUnit::Collapse,
             },
+            label: None,
         }
+    }
+
+    pub fn label(mut self, label: impl ToString) -> Self {
+        self.label = Some(label.to_string());
+        self
     }
 
     pub fn directional(mut self, directional: Directional) -> Self {
@@ -83,6 +97,7 @@ impl ElementBuilder {
             sizing: self.sizing,
             padding: self.padding,
             children: self.children,
+            label: self.label,
         }
     }
 }

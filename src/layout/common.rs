@@ -1,6 +1,6 @@
 use super::dimension::Dimensions;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum Direction {
     Horizontal,
     Vertical,
@@ -25,7 +25,7 @@ impl Direction {
 
 pub type Float = f32;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum SizingUnit {
     Fixed(Float),
     Collapse,
@@ -57,6 +57,7 @@ impl SizingUnit {
     }
 }
 
+#[derive(Debug)]
 pub struct Sizing {
     pub width: SizingUnit,
     pub height: SizingUnit,

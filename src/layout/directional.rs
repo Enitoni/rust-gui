@@ -7,6 +7,7 @@ use super::{
     rect::Rect,
 };
 
+#[derive(Debug)]
 /// Represents a layout of child elements in a given direction, with a given spacing
 pub struct Directional {
     /// Direction of layout
@@ -47,7 +48,8 @@ impl Directional {
     }
 
     fn calculate_childless(&self, element: &Element, bounds: Option<Rect>) -> CalculatedElement {
-        let target = bounds.unwrap_or(Rect::new(0.0, 0.0, 0.0, 0.0));
+        // let target = bounds.unwrap_or(Rect::new(0.0, 0.0, 0.0, 0.0));
+        let target = bounds.unwrap();
 
         let calculated = element
             .sizing()
@@ -85,6 +87,15 @@ impl Directional {
                 SizingUnit::Stretch => {
                     let (width, height) =
                         accumulated_space.diff_with_direction(self.direction, inner.dimensions);
+
+                    dbg!(
+                        child.label(),
+                        accumulated_space,
+                        &outer,
+                        width,
+                        height,
+                        inner.dimensions
+                    );
 
                     child.calculate(Some(Rect::new(width, height, 0.0, 0.0)))
                 }
@@ -126,10 +137,7 @@ impl Directional {
         for index in indices_to_correct {
             let child = &children[index];
 
-            let existing = match &mut calculated_children[index] {
-                Some(x) => x,
-                None => panic!(),
-            };
+            let existing = calculated_children[index].as_mut().unwrap();
 
             let new_calculation =
                 child.calculate(Some(Rect::from_dimensions(calculated_inner_dimensions)));
@@ -242,7 +250,7 @@ impl DirectionalDimensions for Dimensions {
         let (x, y) = direction.swap(self.width, self.height);
 
         *_directional -= x;
-        *_secondary = y;
+        *_secondary -= y;
 
         (width, height)
     }

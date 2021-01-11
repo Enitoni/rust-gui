@@ -15,6 +15,7 @@ pub fn directional(
 
 pub fn header() -> Element {
     directional(Horizontal, Stretch, Fixed(60.), 16.)
+        .label("header")
         .children(vec![
             directional(Horizontal, Fixed(50.0), Stretch, 0.).build(),
             directional(Horizontal, Fixed(50.0), Stretch, 0.).build(),
@@ -28,6 +29,7 @@ pub fn header() -> Element {
 
 fn content() -> Element {
     directional(Vertical, Stretch, Stretch, 16.)
+        .label("content")
         .children(vec![
             directional(Horizontal, Stretch, Fixed(200.), 0.).build(),
             directional(Horizontal, Stretch, Stretch, 0.).build(),
@@ -37,12 +39,14 @@ fn content() -> Element {
 
 fn body() -> Element {
     directional(Horizontal, Stretch, Stretch, 0.)
+        .label("body")
         .children(vec![content()])
         .build()
 }
 
 pub fn test_layout() -> Element {
     directional(Vertical, Stretch, Stretch, 0.)
+        .label("layout")
         .children(vec![header(), body()])
         .build()
 }

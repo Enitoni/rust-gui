@@ -1,7 +1,7 @@
 use crate::Dimensions;
 
 use super::common::*;
-
+#[derive(Debug)]
 pub struct Padding {
     top: Float,
     left: Float,

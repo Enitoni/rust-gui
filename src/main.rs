@@ -24,8 +24,8 @@ fn create_rect_shape<'a>(rect: layout::Rect) -> RectangleShape<'a> {
 
     rect.set_fill_color(Color::rgba(65, 190, 245, 20));
 
-    //rect.set_outline_color(Color::rgba(75, 235, 180, 50));
-    //rect.set_outline_thickness(-1.0);
+    rect.set_outline_color(Color::rgba(75, 235, 180, 50));
+    rect.set_outline_thickness(-1.0);
 
     rect
 }
