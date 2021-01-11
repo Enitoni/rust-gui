@@ -19,6 +19,10 @@ impl Direction {
         self.swap(a, b).0
     }
 
+    pub fn secondary<T>(&self, a: T, b: T) -> T {
+        self.swap(a, b).1
+    }
+
     pub fn flip(&self) -> Direction {
         match self {
             Direction::Horizontal => Direction::Vertical,

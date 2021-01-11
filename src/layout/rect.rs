@@ -28,6 +28,13 @@ impl Rect {
         }
     }
 
+    pub fn from_dimensions_and_position(dimensions: Dimensions, position: Position) -> Rect {
+        Rect {
+            dimensions,
+            position,
+        }
+    }
+
     pub fn offset(&self, side: Side, value: Float) -> Float {
         match side {
             Side::Right => self.dimensions.width - value,

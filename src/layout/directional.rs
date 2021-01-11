@@ -71,11 +71,11 @@ impl Directional {
             let child_sizing = child.sizing();
 
             // Get the primary (directional) unit here
-            let primary = self
+            let (primary_unit, secondary_unit) = self
                 .direction
-                .primary(&child_sizing.width, &child_sizing.height);
+                .swap(&child_sizing.width, &child_sizing.height);
 
-            let (calculated_width, calculated_height) = match primary {
+            let (calculated_width, calculated_height) = match primary_unit {
                 SizingUnit::Fixed(_) | SizingUnit::Collapse => {
                     calculate_intrinsic(child, bounds.clone())
                 }
@@ -93,7 +93,10 @@ impl Directional {
             primary_accumulation.push(primary);
 
             // Max the secondary accumulation
-            secondary_accumulation = secondary_accumulation.max(secondary);
+            // TODO: FIX THIS SHIT
+            if secondary_unit.index() != 2 {
+                secondary_accumulation = secondary_accumulation.max(secondary);
+            }
         }
 
         (primary_accumulation, secondary_accumulation)
@@ -104,7 +107,9 @@ impl Directional {
             .sizing()
             .calculate_without_content(bounds.dimensions);
 
-        CalculatedElement::empty(calculated)
+        let rect = Rect::from_dimensions_and_position(calculated, bounds.position);
+
+        CalculatedElement::from_rect(rect)
     }
 
     fn calculate_childful(&self, element: &Element, outer: Rect) -> CalculatedElement {
@@ -114,22 +119,33 @@ impl Directional {
         let sorted_indices = sorted_child_indices(self.direction, children);
 
         let (primary_accumulation, secondary_accumulation) =
-            self.calculate_accumulation(&sorted_indices, children, inner);
+            self.calculate_accumulation(&sorted_indices, children, inner.clone());
 
         let mut calculated_children: Vec<Option<CalculatedElement>> = vec![None; children.len()];
         let mut primary_offset = 0.;
 
+        // Get the secondary inner bound,
+        // so that secondary stretching can be calculated
+        let secondary_inner = {
+            let (width, height) = inner.dimensions.to_tuple();
+            self.direction.secondary(width, height)
+        };
+
+        let (top, _, left, _) = element.padding().to_tuple();
         let (x, y) = outer.position.to_tuple();
 
-        for index in sorted_indices {
-            let child = &children[index];
+        for (position, index) in sorted_indices.into_iter().enumerate() {
+            let child = &children[position];
             let accumulation = &primary_accumulation[index];
 
-            let (width, height) = self.direction.swap(accumulation, &secondary_accumulation);
+            let (width, height) = self.direction.swap(accumulation, &secondary_inner);
             let (x_offset, y_offset) = self.direction.swap(primary_offset, 0.0);
 
-            calculated_children[index] =
-                Some(child.calculate(Rect::new(*width, *height, x_offset + x, y_offset + y)));
+            let final_x = x + x_offset + left;
+            let final_y = y + y_offset + top;
+
+            calculated_children[position] =
+                Some(child.calculate(Rect::new(*width, *height, final_x, final_y)));
 
             primary_offset += accumulation + self.spacing;
         }
@@ -144,7 +160,7 @@ impl Directional {
 
         CalculatedElement {
             children: calculated_children.into_iter().flatten().collect(),
-            rect: Rect::new(calculated_bounds.width, calculated_bounds.height, x, y),
+            rect: Rect::from_dimensions_and_position(calculated_bounds, outer.position),
         }
     }
 
@@ -183,56 +199,13 @@ fn sorted_child_indices(direction: Direction, children: &Vec<Element>) -> Vec<us
 }
 
 trait DirectionalDimensions {
-    fn allocate_with_direction(
-        &mut self,
-        secondary: &SizingUnit,
-        direction: &Direction,
-        x: Float,
-        y: Float,
-    );
-
     fn occupy_with_direction(&mut self, direction: Direction, space_to_occupy: Float);
-
-    fn diff_with_direction(&self, direction: Direction, bounds: Dimensions) -> (Float, Float);
 }
 
 impl DirectionalDimensions for Dimensions {
-    fn allocate_with_direction(
-        &mut self,
-        secondary_unit: &SizingUnit,
-        direction: &Direction,
-        width: Float,
-        height: Float,
-    ) {
-        let (directional, secondary) = direction.swap(&mut self.width, &mut self.height);
-        let (x, y) = direction.swap(width, height);
-
-        *directional += x;
-
-        match secondary_unit {
-            SizingUnit::Stretch => {}
-            _ => {
-                *secondary = y.max(*secondary);
-            }
-        }
-    }
-
     fn occupy_with_direction(&mut self, direction: Direction, space_to_occupy: Float) {
         let (directional, _) = direction.swap(&mut self.width, &mut self.height);
         *directional -= space_to_occupy;
-    }
-
-    fn diff_with_direction(&self, direction: Direction, bounds: Dimensions) -> (Float, Float) {
-        let mut width = bounds.width;
-        let mut height = bounds.height;
-
-        let (_directional, _secondary) = direction.swap(&mut width, &mut height);
-        let (x, y) = direction.swap(self.width, self.height);
-
-        *_directional -= x;
-        *_secondary -= y;
-
-        (width, height)
     }
 }
 
@@ -286,7 +259,7 @@ mod test {
 
         let result = a.calculate(rect);
 
-        assert_eq!(result.rect.dimensions.width, 100.0);
+        assert_eq!(result.rect.dimensions.width, 200.0);
         assert_eq!(result.rect.dimensions.height, 50.0);
     }
 
@@ -298,13 +271,17 @@ mod test {
             .children(vec![
                 directional(Horizontal, Fixed(20.0), Stretch, 0.).build(),
                 directional(Horizontal, Fixed(20.0), Fixed(30.0), 0.).build(),
-                directional(Horizontal, Stretch, Stretch, 0.).build(),
+                directional(Horizontal, Stretch, Stretch, 0.)
+                    .label("stretcher")
+                    .build(),
                 directional(Horizontal, Fixed(20.0), Stretch, 0.).build(),
             ])
             .build();
 
         let result = element.calculate(rect);
         let child = &result.children[2];
+
+        println!("{:?}", result);
 
         assert_eq!(result.rect.dimensions.height, 30.0);
 
