@@ -41,11 +41,11 @@ pub enum SizingUnit {
 }
 
 impl SizingUnit {
-    pub fn calculate(&self, min: Float, max: Float) -> Float {
+    pub fn calculate(&self, content: Float, bound: Float) -> Float {
         match self {
             SizingUnit::Fixed(a) => *a,
-            SizingUnit::Stretch => max,
-            SizingUnit::Collapse => min,
+            SizingUnit::Stretch => bound.max(0.),
+            SizingUnit::Collapse => content,
         }
     }
 
