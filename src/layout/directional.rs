@@ -150,9 +150,12 @@ impl Directional {
             primary_offset += accumulation + self.spacing;
         }
 
-        let (width, height) = self
-            .direction
-            .swap(primary_accumulation.iter().sum(), secondary_accumulation);
+        // Calculate the bounding box of this element with
+        // the children + spacing
+        let primary_bound: Float = primary_accumulation.iter().sum::<Float>()
+            + ((children.len() - 1) as Float * self.spacing);
+
+        let (width, height) = self.direction.swap(primary_bound, secondary_accumulation);
 
         let calculated_bounds = element
             .sizing()
