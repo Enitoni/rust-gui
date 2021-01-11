@@ -35,6 +35,7 @@ pub type Float = f32;
 
 #[derive(PartialEq, Debug)]
 pub enum SizingUnit {
+    Percent(Float),
     Fixed(Float),
     Collapse,
     Stretch,
@@ -45,6 +46,7 @@ impl SizingUnit {
         match self {
             SizingUnit::Fixed(a) => *a,
             SizingUnit::Stretch => bound.max(0.),
+            SizingUnit::Percent(p) => bound * p,
             SizingUnit::Collapse => content,
         }
     }
@@ -53,7 +55,8 @@ impl SizingUnit {
         match self {
             SizingUnit::Fixed(_) => 0,
             SizingUnit::Collapse => 1,
-            SizingUnit::Stretch => 2,
+            SizingUnit::Percent(_) => 2,
+            SizingUnit::Stretch => 3,
         }
     }
 

@@ -79,7 +79,7 @@ impl Directional {
                 SizingUnit::Fixed(_) | SizingUnit::Collapse => {
                     calculate_intrinsic(child, bounds.clone())
                 }
-                SizingUnit::Stretch => calculate_stretch(
+                SizingUnit::Stretch | SizingUnit::Percent(_) => calculate_stretch(
                     child,
                     &primary_accumulation,
                     available_primary,
@@ -181,6 +181,7 @@ impl Directional {
 fn sorted_child_indices(direction: Direction, children: &Vec<Element>) -> Vec<usize> {
     let mut fixed: Vec<usize> = Vec::new();
     let mut collapse: Vec<usize> = Vec::new();
+    let mut percent: Vec<usize> = Vec::new();
     let mut stretch: Vec<usize> = Vec::new();
 
     for (i, child) in children.iter().enumerate() {
@@ -190,6 +191,7 @@ fn sorted_child_indices(direction: Direction, children: &Vec<Element>) -> Vec<us
         match directional {
             SizingUnit::Fixed(_) => fixed.push(i),
             SizingUnit::Collapse => collapse.push(i),
+            SizingUnit::Percent(_) => percent.push(i),
             SizingUnit::Stretch => stretch.push(i),
         }
     }
@@ -197,6 +199,7 @@ fn sorted_child_indices(direction: Direction, children: &Vec<Element>) -> Vec<us
     fixed
         .into_iter()
         .chain(collapse.into_iter())
+        .chain(percent.into_iter())
         .chain(stretch.into_iter())
         .collect()
 }
