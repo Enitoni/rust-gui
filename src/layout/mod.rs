@@ -31,7 +31,7 @@ mod test {
         let time = Instant::now();
 
         for i in 0..iterations {
-            let result = layout.calculate(Some(rect.clone()));
+            let result = layout.calculate(rect.clone());
 
             if i == 0 {
                 println!("{:#?}", result);

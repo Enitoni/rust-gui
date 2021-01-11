@@ -4,6 +4,7 @@ use super::{dimension::Dimensions, rect::Rect};
 
 const INDENTATION: &str = "  ";
 
+#[derive(Clone)]
 pub struct CalculatedElement {
     pub rect: Rect,
     pub children: Vec<CalculatedElement>,

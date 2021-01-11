@@ -13,5 +13,5 @@ edition = "2018"
 [dependencies]
 rand="0.8"
 
-[target.'cfg(windows)'.dependencies]
+#[target.'cfg(windows)'.dependencies]
 sfml="0.15.1"

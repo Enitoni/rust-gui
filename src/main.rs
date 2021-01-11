@@ -42,10 +42,7 @@ fn main() {
 
     let element = test_layout();
 
-    println!(
-        "{:?}",
-        element.calculate(Some(Rect::from_dimensions(viewport)))
-    );
+    println!("{:?}", element.calculate(Rect::from_dimensions(viewport)));
 
     window.set_active(true);
 
@@ -73,7 +70,7 @@ fn main() {
         let size = window.size();
         let rect = Rect::new(size.x as f32, size.y as f32, 0.0, 0.0);
 
-        let calculated = element.calculate(Some(rect));
+        let calculated = element.calculate(rect);
         let flattened = calculated.flatten();
 
         for child in flattened {

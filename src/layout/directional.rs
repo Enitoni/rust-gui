@@ -1,10 +1,6 @@
 use super::{
-    calculated::CalculatedElement,
-    common::*,
-    dimension::Dimensions,
-    element::Element,
-    padding::{PaddedDimensions, Padding},
-    rect::Rect,
+    calculated::CalculatedElement, common::*, dimension::Dimensions, element::Element,
+    padding::PaddedDimensions, rect::Rect,
 };
 
 #[derive(Debug)]
@@ -32,134 +28,127 @@ impl Directional {
         new_bounds
     }
 
-    fn calculate_child_positions(&self, padding: &Padding, children: &mut [CalculatedElement]) {
-        let mut offset = 0.0;
-        let (top, _, left, _) = padding.to_tuple();
+    // Order of calculations:
+    // 1. Calculate primary, and the accumulated space, and position,
+    // however secondary must also accumulate otherwise secondaries that stretch won't work
+    //
 
-        for child in children.iter_mut() {
-            let Dimensions { width, height } = child.rect.dimensions;
+    // Loops through the children to get the accumulated space needed for the final calculation
+    fn calculate_accumulation(
+        &self,
+        sorted_indices: &Vec<usize>,
+        children: &Vec<Element>,
+        bounds: Rect,
+    ) -> (Vec<f32>, f32) {
+        let mut primary_accumulation: Vec<Float> = Vec::with_capacity(children.len());
+        let mut secondary_accumulation: Float = 0.;
 
-            let (x, y) = self.direction.swap(offset, 0.0);
-            let (space, _) = self.direction.swap(width, height);
+        let (width, height, _, _) = bounds.to_tuple();
+        let available_primary = self.direction.primary(width, height);
 
-            child.rect.translate(x + top, y + left);
-            offset += space as Float + self.spacing as Float;
+        fn calculate_intrinsic(child: &Element, bounds: Rect) -> (Float, Float) {
+            child.calculate(bounds).rect.dimensions.to_tuple()
         }
+
+        fn calculate_stretch(
+            child: &Element,
+            primary_accumulation: &Vec<Float>,
+            available_primary: Float,
+            direction: Direction,
+        ) -> (Float, Float) {
+            let available = available_primary - primary_accumulation.iter().sum::<Float>();
+            let (width, height) = direction.swap(available, 0.0);
+
+            child
+                .calculate(Rect::new(width, height, 0.0, 0.0))
+                .rect
+                .dimensions
+                .to_tuple()
+        }
+
+        for index in sorted_indices {
+            let child = &children[*index];
+            let child_sizing = child.sizing();
+
+            // Get the primary (directional) unit here
+            let primary = self
+                .direction
+                .primary(&child_sizing.width, &child_sizing.height);
+
+            let (calculated_width, calculated_height) = match primary {
+                SizingUnit::Fixed(_) | SizingUnit::Collapse => {
+                    calculate_intrinsic(child, bounds.clone())
+                }
+                SizingUnit::Stretch => calculate_stretch(
+                    child,
+                    &primary_accumulation,
+                    available_primary,
+                    self.direction,
+                ),
+            };
+
+            let (primary, secondary) = self.direction.swap(calculated_width, calculated_height);
+
+            // Push the amount of space the element took up to the primary accumulation
+            primary_accumulation.push(primary);
+
+            // Max the secondary accumulation
+            secondary_accumulation = secondary_accumulation.max(secondary);
+        }
+
+        (primary_accumulation, secondary_accumulation)
     }
 
-    fn calculate_childless(&self, element: &Element, bounds: Option<Rect>) -> CalculatedElement {
-        // let target = bounds.unwrap_or(Rect::new(0.0, 0.0, 0.0, 0.0));
-        let target = bounds.unwrap();
-
+    fn calculate_childless(&self, element: &Element, bounds: Rect) -> CalculatedElement {
         let calculated = element
             .sizing()
-            .calculate_without_content(target.dimensions);
+            .calculate_without_content(bounds.dimensions);
 
         CalculatedElement::empty(calculated)
     }
 
-    fn calculate_childful(&self, element: &Element, outer: Option<Rect>) -> CalculatedElement {
-        let children = element.children();
-
-        let outer = outer.unwrap();
+    fn calculate_childful(&self, element: &Element, outer: Rect) -> CalculatedElement {
         let inner = self.occupy_bounds(element, &outer);
 
+        let children = element.children();
         let sorted_indices = sorted_child_indices(self.direction, children);
 
-        let mut indices_to_correct: Vec<usize> = Vec::with_capacity(sorted_indices.len());
-        let mut accumulated_space = Dimensions::new(0.0, 0.0);
+        let (primary_accumulation, secondary_accumulation) =
+            self.calculate_accumulation(&sorted_indices, children, inner);
 
-        let mut calculated_children: Vec<Option<CalculatedElement>> =
-            Vec::with_capacity(children.len());
+        let mut calculated_children: Vec<Option<CalculatedElement>> = vec![None; children.len()];
+        let mut primary_offset = 0.;
 
-        // Fill the vec with nothing so we can assign later
-        calculated_children.resize_with(children.len(), || None);
+        let (x, y) = outer.position.to_tuple();
 
         for index in sorted_indices {
             let child = &children[index];
-            let child_sizing = child.sizing();
+            let accumulation = &primary_accumulation[index];
 
-            let (unit, secondary) = self
-                .direction
-                .swap(&child_sizing.width, &child_sizing.height);
+            let (width, height) = self.direction.swap(accumulation, &secondary_accumulation);
+            let (x_offset, y_offset) = self.direction.swap(primary_offset, 0.0);
 
-            let calculated_child = match unit {
-                SizingUnit::Stretch => {
-                    let (width, height) =
-                        accumulated_space.diff_with_direction(self.direction, inner.dimensions);
+            calculated_children[index] =
+                Some(child.calculate(Rect::new(*width, *height, x_offset + x, y_offset + y)));
 
-                    child.calculate(Some(Rect::new(width, height, 0.0, 0.0)))
-                }
-                _ => {
-                    let rect = Rect::from_dimensions(
-                        child.sizing().calculate_without_content(inner.dimensions),
-                    );
-
-                    child.calculate(Some(rect))
-                }
-            };
-
-            accumulated_space.allocate_with_direction(
-                &secondary,
-                &self.direction,
-                calculated_child.rect.dimensions.width,
-                calculated_child.rect.dimensions.height,
-            );
-
-            // The child has secondary units that
-            // cannot be calculated before everything else
-            if *secondary == SizingUnit::Stretch {
-                indices_to_correct.push(index);
-            }
-
-            calculated_children[index] = Some(calculated_child);
+            primary_offset += accumulation + self.spacing;
         }
 
-        let mut calculated_inner_dimensions = element
+        let (width, height) = self
+            .direction
+            .swap(primary_accumulation.iter().sum(), secondary_accumulation);
+
+        let calculated_bounds = element
             .sizing()
-            .calculate(accumulated_space, outer.dimensions);
-
-        // Occupy this with padding, otherwise the
-        // non-directional will overflow
-        calculated_inner_dimensions.occupy_with_padding(&element.padding());
-
-        // Re-calculate children with stretchy secondary sizing
-        // TODO: Clean this up if possible.
-        for index in indices_to_correct {
-            let child = &children[index];
-
-            let existing = calculated_children[index].as_mut().unwrap();
-
-            let new_calculation =
-                child.calculate(Some(Rect::from_dimensions(calculated_inner_dimensions)));
-
-            let (_, new_secondary) = self.direction.swap(
-                new_calculation.rect.dimensions.width,
-                new_calculation.rect.dimensions.height,
-            );
-
-            let (_, secondary) = self.direction.swap(
-                &mut existing.rect.dimensions.width,
-                &mut existing.rect.dimensions.height,
-            );
-
-            *secondary = new_secondary;
-        }
-
-        let mut calculated_children: Vec<_> = calculated_children.into_iter().flatten().collect();
-        self.calculate_child_positions(element.padding(), &mut calculated_children);
+            .calculate(Dimensions::new(width, height), outer.dimensions);
 
         CalculatedElement {
-            rect: Rect::from_dimensions(
-                element
-                    .sizing()
-                    .calculate(accumulated_space, outer.dimensions),
-            ),
-            children: calculated_children,
+            children: calculated_children.into_iter().flatten().collect(),
+            rect: Rect::new(calculated_bounds.width, calculated_bounds.height, x, y),
         }
     }
 
-    pub fn calculate(&self, element: &Element, dimensions: Option<Rect>) -> CalculatedElement {
+    pub fn calculate(&self, element: &Element, dimensions: Rect) -> CalculatedElement {
         if element.children().len() > 0 {
             return self.calculate_childful(element, dimensions);
         }
@@ -268,7 +257,7 @@ mod test {
             .sizing(Fixed(50.0), Stretch)
             .build();
 
-        let result = a.calculate(Some(rect));
+        let result = a.calculate(rect);
 
         assert_eq!(result.rect.dimensions.width, 50.0);
         assert_eq!(result.rect.dimensions.height, 100.0);
@@ -295,7 +284,7 @@ mod test {
             .children(vec![child])
             .build();
 
-        let result = a.calculate(Some(rect));
+        let result = a.calculate(rect);
 
         assert_eq!(result.rect.dimensions.width, 100.0);
         assert_eq!(result.rect.dimensions.height, 50.0);
@@ -314,7 +303,7 @@ mod test {
             ])
             .build();
 
-        let result = element.calculate(Some(rect));
+        let result = element.calculate(rect);
         let child = &result.children[2];
 
         assert_eq!(result.rect.dimensions.height, 30.0);
@@ -335,7 +324,7 @@ mod test {
             .pad_all(10.0)
             .build();
 
-        let result = element.calculate(Some(rect));
+        let result = element.calculate(rect);
         let child = &result.children[0];
 
         assert_eq!(child.rect.dimensions.height, 50.0 - (10. * 2.0));

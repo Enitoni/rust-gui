@@ -34,13 +34,21 @@ fn content() -> Element {
             directional(Horizontal, Stretch, Fixed(200.), 0.).build(),
             directional(Horizontal, Stretch, Stretch, 0.).build(),
         ])
+        .pad_all(16.0)
+        .build()
+}
+
+fn sidebar() -> Element {
+    directional(Horizontal, Fixed(150.0), Stretch, 0.)
+        .label("sidebar")
+        .children(vec![])
         .build()
 }
 
 fn body() -> Element {
     directional(Horizontal, Stretch, Stretch, 0.)
         .label("body")
-        .children(vec![content()])
+        .children(vec![content(), sidebar()])
         .build()
 }
 
