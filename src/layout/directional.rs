@@ -124,15 +124,17 @@ impl Directional {
         let mut calculated_children: Vec<Option<CalculatedElement>> = vec![None; children.len()];
         let mut primary_offset = 0.;
 
+        let (top, bottom, left, right) = element.padding().to_tuple();
+        let (x, y) = outer.position.to_tuple();
+
         // Get the secondary inner bound,
         // so that secondary stretching can be calculated
         let secondary_inner = {
             let (width, height) = inner.dimensions.to_tuple();
-            self.direction.secondary(width, height)
-        };
+            let value = self.direction.secondary(width, height);
 
-        let (top, _, left, _) = element.padding().to_tuple();
-        let (x, y) = outer.position.to_tuple();
+            value
+        };
 
         for (position, index) in sorted_indices.into_iter().enumerate() {
             let child = &children[position];
@@ -155,7 +157,12 @@ impl Directional {
         let primary_bound: Float = primary_accumulation.iter().sum::<Float>()
             + ((children.len() - 1) as Float * self.spacing);
 
-        let (width, height) = self.direction.swap(primary_bound, secondary_accumulation);
+        // Account for padding in content
+        let (width, height) = {
+            let (w, h) = self.direction.swap(primary_bound, secondary_accumulation);
+
+            (w + left + right, h + top + bottom)
+        };
 
         let calculated_bounds = element
             .sizing()
