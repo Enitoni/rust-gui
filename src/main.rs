@@ -1,5 +1,7 @@
 #[allow(dead_code)]
 mod layout;
+use std::time::Instant;
+
 pub use layout::*;
 
 mod mock;
@@ -22,9 +24,9 @@ fn create_rect_shape<'a>(rect: layout::Rect) -> RectangleShape<'a> {
     rect.set_size((width, height));
     rect.set_position((x, y));
 
-    rect.set_fill_color(Color::rgba(65, 190, 245, 20));
+    rect.set_fill_color(Color::rgba(255, 255, 255, 10));
 
-    rect.set_outline_color(Color::rgba(75, 235, 180, 50));
+    rect.set_outline_color(Color::rgba(0, 110, 255, 60));
     rect.set_outline_thickness(-1.0);
 
     rect
@@ -46,6 +48,11 @@ fn main() {
 
     window.set_active(true);
 
+    let mut t = 0.;
+    let mut i = 0;
+
+    let mut time = Instant::now();
+
     while window.is_open() {
         while let Some(event) = window.poll_event() {
             match event {
@@ -63,6 +70,17 @@ fn main() {
                 }
                 _ => (),
             }
+        }
+
+        t += time.elapsed().as_secs_f32();
+        i += 1;
+
+        time = Instant::now();
+
+        if t > 1. {
+            println!("FPS: {}", i);
+            i = 0;
+            t -= 1.;
         }
 
         window.clear(Color::BLACK);
