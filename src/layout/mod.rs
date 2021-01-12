@@ -22,7 +22,7 @@ mod test {
 
     #[test]
     fn computes_complex_directional_layout() {
-        let rect = Rect::new(500.0, 500.0, 0.0, 0.0);
+        let rect = Rect::new(800.0, 800.0, 0.0, 0.0);
         let layout = test_layout();
 
         let iterations = 1;
