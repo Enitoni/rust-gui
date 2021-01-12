@@ -14,7 +14,17 @@ pub struct Directional {
 }
 
 impl Directional {
-    /// Returns a new Rect with padding and spacing accounted for
+    fn calculate_childless(&self, element: &Element, bounds: Rect) -> CalculatedElement {
+        let calculated = element
+            .sizing()
+            .calculate_without_content(bounds.dimensions);
+
+        let rect = Rect::from_dimensions_and_position(calculated, bounds.position);
+
+        CalculatedElement::from_rect(rect)
+    }
+
+    // Returns a new Rect with padding and spacing accounted for
     fn occupy_bounds(&self, element: &Element, bounds: &Rect) -> Rect {
         let mut new_bounds = bounds.clone();
 
@@ -28,11 +38,6 @@ impl Directional {
         new_bounds
     }
 
-    // Order of calculations:
-    // 1. Calculate primary, and the accumulated space, and position,
-    // however secondary must also accumulate otherwise secondaries that stretch won't work
-    //
-
     // Loops through the children to get the accumulated space needed for the final calculation
     fn calculate_accumulation(
         &self,
@@ -40,7 +45,7 @@ impl Directional {
         children: &Vec<Element>,
         bounds: Rect,
     ) -> (Vec<f32>, f32) {
-        let mut primary_accumulation: Vec<Float> = Vec::with_capacity(children.len());
+        let mut primary_accumulation: Vec<Float> = vec![0.; children.len()];
         let mut secondary_accumulation: Float = 0.;
 
         let (width, height, _, _) = bounds.to_tuple();
@@ -90,7 +95,7 @@ impl Directional {
             let (primary, secondary) = self.direction.swap(calculated_width, calculated_height);
 
             // Push the amount of space the element took up to the primary accumulation
-            primary_accumulation.push(primary);
+            primary_accumulation[*index] = primary;
 
             // Max the secondary accumulation
             // TODO: FIX THIS SHIT
@@ -100,16 +105,6 @@ impl Directional {
         }
 
         (primary_accumulation, secondary_accumulation)
-    }
-
-    fn calculate_childless(&self, element: &Element, bounds: Rect) -> CalculatedElement {
-        let calculated = element
-            .sizing()
-            .calculate_without_content(bounds.dimensions);
-
-        let rect = Rect::from_dimensions_and_position(calculated, bounds.position);
-
-        CalculatedElement::from_rect(rect)
     }
 
     fn calculate_childful(&self, element: &Element, outer: Rect) -> CalculatedElement {
@@ -136,9 +131,9 @@ impl Directional {
             value
         };
 
-        for (position, index) in sorted_indices.into_iter().enumerate() {
-            let child = &children[position];
-            let accumulation = &primary_accumulation[index];
+        for i in 0..children.len() {
+            let child = &children[i];
+            let accumulation = &primary_accumulation[i];
 
             let (width, height) = self.direction.swap(accumulation, &secondary_inner);
             let (x_offset, y_offset) = self.direction.swap(primary_offset, 0.0);
@@ -146,7 +141,7 @@ impl Directional {
             let final_x = x + x_offset + left;
             let final_y = y + y_offset + top;
 
-            calculated_children[position] =
+            calculated_children[i] =
                 Some(child.calculate(Rect::new(*width, *height, final_x, final_y)));
 
             primary_offset += accumulation + self.spacing;
