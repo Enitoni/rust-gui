@@ -12,6 +12,5 @@ edition = "2018"
 
 [dependencies]
 rand="0.8"
-
-#[target.'cfg(windows)'.dependencies]
-sfml="0.15.1"
+gl="0.6.0"
+glutin="0.26.0"
