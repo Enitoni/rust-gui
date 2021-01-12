@@ -15,6 +15,15 @@ pub struct RectangleShape {
     pub top: f32,
 }
 
+impl Drop for RectangleShape {
+    fn drop(&mut self) {
+        unsafe {
+            gl::DeleteBuffers(1, &mut self.vbo);
+            gl::DeleteVertexArrays(1, &mut self.vao);
+        }
+    }
+}
+
 pub type Vertex = (f32, f32);
 
 impl RectangleShape {
