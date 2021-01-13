@@ -70,8 +70,9 @@ fn user() -> Element {
     directional(Horizontal, Stretch, Collapse, 8.)
         .children(vec![
             directional(Horizontal, Fixed(35.), Fixed(35.), 0.).build(),
-            directional(Vertical, Stretch, Collapse, 8.)
+            directional(Vertical, Stretch, Collapse, 4.)
                 .children(children)
+                .align(Start, Middle)
                 .build(),
         ])
         .build()
@@ -113,10 +114,11 @@ fn message() -> Element {
     directional(Horizontal, Stretch, Collapse, 8.)
         .children(vec![
             directional(Horizontal, Fixed(35.), Fixed(35.), 0.).build(),
-            directional(Vertical, Stretch, Collapse, 8.)
+            directional(Vertical, Stretch, Collapse, 4.)
                 .children(children)
                 .build(),
         ])
+        .align(Start, End)
         .build()
 }
 
