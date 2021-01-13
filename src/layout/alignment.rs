@@ -1,3 +1,5 @@
+use crate::Float;
+
 #[derive(Clone, Copy, Debug)]
 pub enum AlignUnit {
     Start,
@@ -11,6 +13,14 @@ impl AlignUnit {
             AlignUnit::Start => 0,
             AlignUnit::End => 1,
             AlignUnit::Middle => 2,
+        }
+    }
+
+    pub fn calculate(&self, content: Float, bounds: Float) -> Float {
+        match self {
+            AlignUnit::Start => 0.,
+            AlignUnit::Middle => (bounds / 2.) - content / 2.,
+            AlignUnit::End => bounds - content,
         }
     }
 }
