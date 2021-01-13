@@ -13,6 +13,7 @@ pub struct RectangleShape {
     pub height: f32,
     pub left: f32,
     pub top: f32,
+    pub border_thickness: f32,
 }
 
 impl Drop for RectangleShape {
@@ -76,15 +77,22 @@ impl RectangleShape {
             verts.push(self.get_point(i));
         }
 
-        unsafe {
-            gl::NamedBufferData(
-                self.vbo,
-                mem::size_of::<(Vertex, Vertex)>() as isize * verts.len() as isize,
-                verts.as_ptr() as *const GLvoid,
-                gl::STATIC_DRAW,
-            );
+        // borders
+        if self.border_thickness != 0. {
+            
         }
-    }
+
+            unsafe {
+                // initialize just the vertex data
+                gl::NamedBufferData(
+                    self.vbo,
+                    mem::size_of::<(Vertex, Vertex)>() as isize * verts.len() as isize,
+                    verts.as_ptr() as *const GLvoid,
+                    gl::STATIC_DRAW,
+                );
+            }
+        }
+    
 
     fn get_point(&self, index: i32) -> (Vertex, Vertex) {
         let uv = match index {
@@ -98,10 +106,11 @@ impl RectangleShape {
         (pos, uv)
     }
 
-    pub fn draw(&self) {
+    pub fn draw(&self, shader: &super::shader::Shader) {
         unsafe {
             gl::BindVertexArray(self.vao);
             gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
+            shader.setUniform("is_border", true);
             gl::BindVertexArray(0);
         }
     }

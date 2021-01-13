@@ -25,3 +25,11 @@ impl Uniform for f32 {
         }
     }
 }
+
+impl Uniform for bool {
+    fn set(&self, id: &str, handle: GLuint) {
+        unsafe {
+            let name = CString::new(id.as_bytes()).unwrap();
+        }
+    }
+}
