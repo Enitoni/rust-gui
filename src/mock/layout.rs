@@ -21,7 +21,7 @@ pub fn header() -> Element {
         .label("header")
         .children(vec![
             directional(Horizontal, Fixed(50.), Stretch, 0.).build(),
-            directional(Horizontal, Fixed(50.), Stretch, 0.)
+            directional(Horizontal, Fixed(300.), Stretch, 0.)
                 .align(End, Start)
                 .build(),
             directional(Horizontal, Fixed(70.), Stretch, 0.).build(),
