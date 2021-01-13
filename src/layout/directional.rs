@@ -18,13 +18,7 @@ impl Directional {
     fn occupy_bounds(&self, element: &Element, bounds: &Rect) -> Rect {
         let mut new_bounds = bounds.clone();
 
-        new_bounds.dimensions.occupy_with_direction(
-            self.direction,
-            self.spacing * (element.children().len() - 1) as f32,
-        );
-
         new_bounds.dimensions.occupy_with_padding(element.padding());
-
         new_bounds
     }
 
@@ -39,7 +33,7 @@ impl Directional {
         let mut secondary_accumulation: Float = 0.;
 
         let (width, height, _, _) = bounds.to_tuple();
-        let available_primary = self.direction.primary(width, height);
+        let available_primary = self.direction.primary(width, height) - self.spacing;
 
         fn calculate_intrinsic(child: &Element, bounds: Rect) -> (Float, Float) {
             child.calculate(bounds).rect.dimensions.to_tuple()
@@ -126,9 +120,14 @@ impl Directional {
             *accumulator += accumulation + self.spacing;
         }
 
-        let middle_center = (primary / 2.) - middle_accumulation / 2.;
-        let middle_offset = middle_center.max(start_accumulation + self.spacing);
         let end_offset = primary - end_accumulation;
+
+        let middle_center = (primary / 2.) - middle_accumulation / 2.;
+
+        let start_end_bound = start_accumulation + self.spacing;
+        let end_start_bound = end_offset - middle_accumulation - self.spacing;
+
+        let middle_offset = (middle_center.max(start_end_bound)).min(end_start_bound);
 
         // There's no need for a start offset, it's always 0.
         (middle_offset, end_offset)
