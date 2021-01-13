@@ -58,8 +58,9 @@ fn user_sidebar() -> Element {
 
 fn user() -> Element {
     let mut rng = thread_rng();
+    let range = &rng.gen_range(1..=2);
 
-    let children = (0..2)
+    let children = (0..*range)
         .map(|_| {
             let width = &rng.gen_range(0.2..1.0);
 
