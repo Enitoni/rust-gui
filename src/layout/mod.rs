@@ -1,3 +1,4 @@
+mod alignment;
 mod calculated;
 mod common;
 mod dimension;
@@ -7,6 +8,7 @@ mod padding;
 mod position;
 mod rect;
 
+pub use alignment::*;
 pub use common::*;
 pub use dimension::*;
 pub use directional::*;
@@ -25,7 +27,7 @@ mod test {
         let rect = Rect::new(800.0, 800.0, 0.0, 0.0);
         let layout = test_layout();
 
-        let iterations = 1;
+        let iterations = 5000;
         let mut nodes: usize = 0;
 
         let time = Instant::now();

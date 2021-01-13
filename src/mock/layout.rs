@@ -1,4 +1,5 @@
-use crate::{Direction, Directional, Element, ElementBuilder, Float, SizingUnit};
+use crate::{AlignUnit, Direction, Directional, Element, ElementBuilder, Float, SizingUnit};
+use AlignUnit::*;
 use Direction::*;
 use SizingUnit::*;
 
@@ -19,11 +20,18 @@ pub fn header() -> Element {
     directional(Horizontal, Stretch, Fixed(60.), 16.)
         .label("header")
         .children(vec![
-            directional(Horizontal, Fixed(50.0), Stretch, 0.).build(),
-            directional(Horizontal, Fixed(50.0), Stretch, 0.).build(),
-            directional(Horizontal, Fixed(50.0), Stretch, 0.).build(),
-            directional(Horizontal, Stretch, Stretch, 0.).build(),
-            directional(Horizontal, Fixed(80.0), Stretch, 0.).build(),
+            directional(Horizontal, Fixed(50.), Stretch, 0.).build(),
+            directional(Horizontal, Fixed(50.), Stretch, 0.)
+                .align(End, Start)
+                .build(),
+            directional(Horizontal, Fixed(70.), Stretch, 0.).build(),
+            directional(Horizontal, Fixed(70.), Stretch, 0.)
+                .align(Middle, Start)
+                .build(),
+            directional(Horizontal, Fixed(100.), Stretch, 0.)
+                .align(Middle, Start)
+                .build(),
+            directional(Horizontal, Fixed(80.), Stretch, 0.).build(),
         ])
         .pad_all(16.0)
         .build()

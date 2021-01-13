@@ -1,6 +1,8 @@
+use crate::Alignment;
+
 use super::{
-    calculated::CalculatedElement, common::*, dimension::Dimensions, directional::Directional,
-    padding::Padding, rect::Rect,
+    alignment::*, calculated::CalculatedElement, common::*, dimension::Dimensions,
+    directional::Directional, padding::Padding, rect::Rect,
 };
 
 #[derive(Debug)]
@@ -14,6 +16,7 @@ pub struct Element {
     kind: ElementKind,
     sizing: Sizing,
     padding: Padding,
+    alignment: Alignment,
     children: Vec<Element>,
     label: Option<String>,
 }
@@ -41,12 +44,17 @@ impl Element {
     pub fn label(&self) -> Option<&String> {
         self.label.as_ref()
     }
+
+    pub fn alignment(&self) -> &Alignment {
+        &self.alignment
+    }
 }
 
 pub struct ElementBuilder {
     kind: ElementKind,
     sizing: Sizing,
     padding: Padding,
+    alignment: Alignment,
     children: Vec<Element>,
     label: Option<String>,
 }
@@ -57,6 +65,7 @@ impl ElementBuilder {
             kind: ElementKind::None,
             children: Vec::new(),
             padding: Padding::empty(),
+            alignment: Alignment::new(AlignUnit::Start, AlignUnit::Start),
             sizing: Sizing {
                 width: SizingUnit::Collapse,
                 height: SizingUnit::Collapse,
@@ -72,6 +81,11 @@ impl ElementBuilder {
 
     pub fn directional(mut self, directional: Directional) -> Self {
         self.kind = ElementKind::Directional(directional);
+        self
+    }
+
+    pub fn align(mut self, horizontal: AlignUnit, vertical: AlignUnit) -> Self {
+        self.alignment = Alignment::new(horizontal, vertical);
         self
     }
 
@@ -94,10 +108,11 @@ impl ElementBuilder {
     pub fn build(self) -> Element {
         Element {
             kind: self.kind,
+            label: self.label,
             sizing: self.sizing,
             padding: self.padding,
             children: self.children,
-            label: self.label,
+            alignment: self.alignment,
         }
     }
 }

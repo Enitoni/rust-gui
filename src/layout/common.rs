@@ -33,7 +33,7 @@ impl Direction {
 
 pub type Float = f32;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub enum SizingUnit {
     Percent(Float),
     Fixed(Float),
@@ -85,6 +85,10 @@ impl Sizing {
     // This is used when the content is unknown, such as with a childless element
     pub fn calculate_without_content(&self, bounds: Dimensions) -> Dimensions {
         self.calculate(Dimensions::new(0.0, 0.0), bounds)
+    }
+
+    pub fn as_tuple(&self) -> (SizingUnit, SizingUnit) {
+        (self.width, self.height)
     }
 
     pub fn fixed(&self) -> Result<Dimensions, &str> {
