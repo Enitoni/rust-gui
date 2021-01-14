@@ -11,8 +11,8 @@ pub struct RectangleShape {
     vao: GLuint,
     pub width: f32,
     pub height: f32,
-    pub left: f32,
-    pub top: f32,
+    pub x: f32,
+    pub y: f32,
     pub border_thickness: f32,
 }
 
@@ -28,14 +28,21 @@ impl Drop for RectangleShape {
 pub type Vertex = (f32, f32);
 
 impl RectangleShape {
-    pub fn new(width: f32, height: f32, left: f32, top: f32) -> RectangleShape {
+    pub fn new(
+        width: f32,
+        height: f32,
+        left: f32,
+        top: f32,
+        border_thickness: Option<f32>,
+    ) -> RectangleShape {
         let mut r = RectangleShape {
             vbo: 0,
             vao: 0,
             width,
             height,
-            left,
-            top,
+            x: left,
+            y: top,
+            border_thickness: border_thickness.unwrap_or(0.),
         };
         r.init_opengl_members();
 
@@ -79,20 +86,76 @@ impl RectangleShape {
 
         // borders
         if self.border_thickness != 0. {
-            
+            let corners = [
+                (self.x, self.y),
+                (self.x + self.width, self.y),
+                (self.x, self.y + self.height),
+                (self.x + self.width, self.y + self.height),
+            ];
+
+            let corners_extruded = [
+                (
+                    self.x - self.border_thickness,
+                    self.y - self.border_thickness,
+                ),
+                (
+                    self.x + self.width + self.border_thickness,
+                    self.y - self.border_thickness,
+                ),
+                (
+                    self.x - self.border_thickness,
+                    self.y + self.height + self.border_thickness,
+                ),
+                (
+                    self.x + self.width + self.border_thickness,
+                    self.y + self.height + self.border_thickness,
+                ),
+            ];
+
+            let border_verts = [
+                //left
+                corners_extruded[0],
+                corners[0],
+                corners_extruded[2],
+                corners[0],
+                corners[2],
+                corners_extruded[2],
+                // top
+                corners_extruded[0],
+                corners_extruded[1],
+                corners[0],
+                corners[0],
+                corners_extruded[1],
+                corners[1],
+                // right
+                corners[1],
+                corners_extruded[1],
+                corners[3],
+                corners[3],
+                corners_extruded[1],
+                corners_extruded[3],
+                // bottom
+                corners[2],
+                corners[3],
+                corners_extruded[2],
+                corners_extruded[2],
+                corners[3],
+                corners_extruded[3],
+            ];
+
+            verts.extend(border_verts.into_iter().map(|v| (*v, (0., 0.))));
         }
 
-            unsafe {
-                // initialize just the vertex data
-                gl::NamedBufferData(
-                    self.vbo,
-                    mem::size_of::<(Vertex, Vertex)>() as isize * verts.len() as isize,
-                    verts.as_ptr() as *const GLvoid,
-                    gl::STATIC_DRAW,
-                );
-            }
+        unsafe {
+            // initialize just the vertex data
+            gl::NamedBufferData(
+                self.vbo,
+                mem::size_of::<(Vertex, Vertex)>() as isize * verts.len() as isize,
+                verts.as_ptr() as *const GLvoid,
+                gl::STATIC_DRAW,
+            );
         }
-    
+    }
 
     fn get_point(&self, index: i32) -> (Vertex, Vertex) {
         let uv = match index {
@@ -102,15 +165,21 @@ impl RectangleShape {
             3 => (1.0, 1.0),
             _ => panic!(),
         };
-        let pos = (self.left + uv.0 * self.width, self.top + uv.1 * self.height);
+        let pos = (self.x + uv.0 * self.width, self.y + uv.1 * self.height);
         (pos, uv)
     }
 
     pub fn draw(&self, shader: &super::shader::Shader) {
         unsafe {
             gl::BindVertexArray(self.vao);
+            shader.setUniform("is_border", 0);
             gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
-            shader.setUniform("is_border", true);
+
+            if self.border_thickness != 0. {
+                shader.setUniform("is_border", 1);
+                gl::DrawArrays(gl::TRIANGLES, 4, 24);
+            }
+
             gl::BindVertexArray(0);
         }
     }

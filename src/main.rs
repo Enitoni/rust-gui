@@ -17,7 +17,7 @@ use graphics::rectangle_shape::RectangleShape;
 fn create_rect_shape(rect: &layout::Rect) -> RectangleShape {
     let (width, height, x, y) = rect.to_tuple();
 
-    RectangleShape::new(width, height, x, y)
+    RectangleShape::new(width, height, x, y, Some(-1.0))
 }
 
 // // Returns a testing rect shape
@@ -47,7 +47,10 @@ fn main() {
 
     let el = EventLoop::new();
     let wb = WindowBuilder::new().with_title("Layout test");
-    let windowed_context = ContextBuilder::new().with_vsync(false).build_windowed(wb, &el).unwrap();
+    let windowed_context = ContextBuilder::new()
+        .with_vsync(false)
+        .build_windowed(wb, &el)
+        .unwrap();
     let windowed_context = unsafe { windowed_context.make_current().unwrap() };
 
     windowed_context
@@ -144,7 +147,7 @@ fn main() {
 
                 for child in flattened {
                     let rect = create_rect_shape(&child.rect);
-                    rect.draw();
+                    rect.draw(&box_shader);
                 }
 
                 windowed_context.swap_buffers().unwrap();
