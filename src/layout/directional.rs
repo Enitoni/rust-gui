@@ -60,9 +60,9 @@ impl Directional {
             let child_sizing = child.sizing();
 
             // Get the primary (directional) unit here
-            let (primary_unit, secondary_unit) = self
+            let primary_unit = self
                 .direction
-                .swap(&child_sizing.width, &child_sizing.height);
+                .primary(&child_sizing.width, &child_sizing.height);
 
             let (calculated_width, calculated_height) = match primary_unit {
                 SizingUnit::Fixed(_) | SizingUnit::Collapse => {
