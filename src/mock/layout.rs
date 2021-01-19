@@ -77,7 +77,7 @@ fn user() -> Element {
     let children = (0..*range)
         .map(|_| {
             let width = &rng.gen_range(0.2..1.0);
-            let width = format!("Percent:{}%,_,_", width);
+            let width = format!("Percent:{},_,_", width);
 
             ElementBuilder::new()
                 .directional(Horizontal, 0.)
@@ -141,7 +141,7 @@ fn message() -> Element {
     let children = (0..*amount)
         .map(|_| {
             let width = &rng.gen_range(0.2..1.0);
-            let width = format!("Percent:{}%,_,_", width);
+            let width = format!("Percent:{},_,_", width);
 
             ElementBuilder::new()
                 .directional(Horizontal, 0.)

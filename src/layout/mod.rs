@@ -29,7 +29,7 @@ mod test {
         let rect = Rect::new(800.0, 800.0, 0.0, 0.0);
         let layout = test_layout();
 
-        let iterations = 5000;
+        let iterations = 1;
         let mut nodes: usize = 0;
 
         let time = Instant::now();

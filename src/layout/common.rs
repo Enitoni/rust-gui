@@ -61,7 +61,7 @@ impl SizingUnit {
             SizingUnit::Fixed(_) => 0,
             SizingUnit::Collapse(c) => 1 + c.index(),
             SizingUnit::Percent(_, _, _) => 5,
-            SizingUnit::Stretch(c) => 4 + c.index(),
+            SizingUnit::Stretch(c) => 6 + c.index(),
         }
     }
 

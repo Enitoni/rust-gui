@@ -242,11 +242,11 @@ impl Directional {
             let secondary_unit = self.direction.secondary(width, height);
 
             match secondary_unit {
-                SizingUnit::Stretch(_) => {
+                SizingUnit::Stretch(_) => {}
+                _ => {
                     secondary_inner_accumulation =
                         secondary_accumulations[i].max(secondary_inner_accumulation);
                 }
-                _ => {}
             }
         }
 
