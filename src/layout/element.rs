@@ -1,4 +1,4 @@
-use crate::Alignment;
+use crate::{parsing::parse_sizing_unit, Alignment, ConstraintUnit};
 
 use super::{
     alignment::*, calculated::CalculatedElement, common::*, dimension::Dimensions,
@@ -67,8 +67,8 @@ impl ElementBuilder {
             padding: Padding::empty(),
             alignment: Alignment::new(AlignUnit::Start, AlignUnit::Start),
             sizing: Sizing {
-                width: SizingUnit::Collapse,
-                height: SizingUnit::Collapse,
+                width: SizingUnit::Collapse(ConstraintUnit::None),
+                height: SizingUnit::Collapse(ConstraintUnit::None),
             },
             label: None,
         }
@@ -79,8 +79,8 @@ impl ElementBuilder {
         self
     }
 
-    pub fn directional(mut self, directional: Directional) -> Self {
-        self.kind = ElementKind::Directional(directional);
+    pub fn directional(mut self, direction: Direction, spacing: Float) -> Self {
+        self.kind = ElementKind::Directional(Directional::new(direction, spacing));
         self
     }
 
@@ -89,9 +89,9 @@ impl ElementBuilder {
         self
     }
 
-    pub fn sizing(mut self, width: SizingUnit, height: SizingUnit) -> Self {
-        self.sizing.width = width;
-        self.sizing.height = height;
+    pub fn sizing(mut self, width: &str, height: &str) -> Self {
+        self.sizing.width = parse_sizing_unit(width).unwrap();
+        self.sizing.height = parse_sizing_unit(height).unwrap();
         self
     }
 

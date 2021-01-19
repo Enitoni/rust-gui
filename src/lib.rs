@@ -1,6 +1,8 @@
 mod layout;
 pub use layout::*;
 
+mod parsing;
+
 #[cfg(test)]
 mod mock;
 

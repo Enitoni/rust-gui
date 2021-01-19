@@ -7,13 +7,17 @@ use super::{
 /// Represents a layout of child elements in a given direction, with a given spacing
 pub struct Directional {
     /// Direction of layout
-    pub direction: Direction,
+    direction: Direction,
 
     /// Spacing between children (by default 0)
-    pub spacing: Float,
+    spacing: Float,
 }
 
 impl Directional {
+    pub fn new(direction: Direction, spacing: Float) -> Directional {
+        Directional { direction, spacing }
+    }
+
     // Returns a new Rect with padding and spacing accounted for
     fn occupy_bounds(&self, element: &Element, bounds: &Rect) -> Rect {
         let mut new_bounds = bounds.clone();
@@ -65,10 +69,10 @@ impl Directional {
                 .primary(&child_sizing.width, &child_sizing.height);
 
             let (calculated_width, calculated_height) = match primary_unit {
-                SizingUnit::Fixed(_) | SizingUnit::Collapse => {
+                SizingUnit::Fixed(_) | SizingUnit::Collapse(_) => {
                     calculate_intrinsic(child, bounds.clone())
                 }
-                SizingUnit::Stretch | SizingUnit::Percent(_) => calculate_stretch(
+                SizingUnit::Stretch(_) | SizingUnit::Percent(_, _, _) => calculate_stretch(
                     child,
                     &primary_accumulation,
                     available_primary,
@@ -237,9 +241,12 @@ impl Directional {
             let (width, height) = child.sizing().as_tuple();
             let secondary_unit = self.direction.secondary(width, height);
 
-            if secondary_unit != SizingUnit::Stretch {
-                secondary_inner_accumulation =
-                    secondary_accumulations[i].max(secondary_inner_accumulation);
+            match secondary_unit {
+                SizingUnit::Stretch(_) => {
+                    secondary_inner_accumulation =
+                        secondary_accumulations[i].max(secondary_inner_accumulation);
+                }
+                _ => {}
             }
         }
 
@@ -299,23 +306,15 @@ impl DirectionalDimensions for Dimensions {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        layout::{element::ElementBuilder, rect::Rect, Direction::*, SizingUnit::*},
-        mock::layout::directional,
-    };
-
-    use super::Directional;
+    use crate::layout::{element::ElementBuilder, rect::Rect, Direction::*};
 
     #[test]
     fn calculates_childless() {
         let rect = Rect::new(100.0, 100.0, 0.0, 0.0);
 
         let a = ElementBuilder::new()
-            .directional(Directional {
-                direction: Horizontal,
-                spacing: 0.0,
-            })
-            .sizing(Fixed(50.0), Stretch)
+            .directional(Horizontal, 0.0)
+            .sizing("Fixed:50", "Stretch")
             .build();
 
         let result = a.calculate(rect);
@@ -329,19 +328,13 @@ mod test {
         let rect = Rect::new(200.0, 200.0, 0.0, 0.0);
 
         let child = ElementBuilder::new()
-            .directional(Directional {
-                direction: Horizontal,
-                spacing: 0.0,
-            })
-            .sizing(Fixed(50.0), Fixed(50.0))
+            .directional(Horizontal, 0.0)
+            .sizing("Fixed:50", "Fixed:50")
             .build();
 
         let a = ElementBuilder::new()
-            .directional(Directional {
-                direction: Vertical,
-                spacing: 0.0,
-            })
-            .sizing(Stretch, Collapse)
+            .directional(Vertical, 0.0)
+            .sizing("Stretch", "Collapse")
             .children(vec![child])
             .build();
 
@@ -355,14 +348,27 @@ mod test {
     fn calculates_stretch() {
         let rect = Rect::new(100.0, 100.0, 0.0, 0.0);
 
-        let element = directional(Horizontal, Stretch, Collapse, 0.)
+        let element = ElementBuilder::new()
+            .directional(Horizontal, 0.)
+            .sizing("Stretch", "Collapse")
             .children(vec![
-                directional(Horizontal, Fixed(20.0), Stretch, 0.).build(),
-                directional(Horizontal, Fixed(20.0), Fixed(30.0), 0.).build(),
-                directional(Horizontal, Stretch, Stretch, 0.)
+                ElementBuilder::new()
+                    .directional(Horizontal, 0.)
+                    .sizing("Fixed:20", "Stretch")
+                    .build(),
+                ElementBuilder::new()
+                    .directional(Horizontal, 0.)
+                    .sizing("Fixed:20", "Fixed:30")
+                    .build(),
+                ElementBuilder::new()
+                    .directional(Horizontal, 0.)
+                    .sizing("Stretch", "Stretch")
                     .label("stretcher")
                     .build(),
-                directional(Horizontal, Fixed(20.0), Stretch, 0.).build(),
+                ElementBuilder::new()
+                    .directional(Horizontal, 0.)
+                    .sizing("Fixed:20", "Stretch")
+                    .build(),
             ])
             .build();
 
@@ -384,8 +390,13 @@ mod test {
     fn calculates_padding() {
         let rect = Rect::new(100.0, 100.0, 0.0, 0.0);
 
-        let element = directional(Horizontal, Stretch, Fixed(50.0), 0.)
-            .children(vec![directional(Horizontal, Stretch, Stretch, 0.).build()])
+        let element = ElementBuilder::new()
+            .directional(Horizontal, 0.)
+            .sizing("Stretch", "Fixed:50")
+            .children(vec![ElementBuilder::new()
+                .directional(Horizontal, 0.)
+                .sizing("Stretch", "Stretch")
+                .build()])
             .pad_all(10.0)
             .build();
 

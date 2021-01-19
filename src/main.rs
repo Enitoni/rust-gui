@@ -2,6 +2,8 @@
 mod layout;
 use std::time::Instant;
 
+mod parsing;
+
 pub use layout::*;
 
 mod mock;

@@ -1,4 +1,4 @@
-use super::dimension::Dimensions;
+use super::{dimension::Dimensions, ConstraintUnit};
 
 #[derive(Clone, Copy, Debug)]
 pub enum Direction {
@@ -35,28 +35,33 @@ pub type Float = f32;
 
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub enum SizingUnit {
-    Percent(Float),
+    Percent(Float, ConstraintUnit, ConstraintUnit),
     Fixed(Float),
-    Collapse,
-    Stretch,
+    Collapse(ConstraintUnit),
+    Stretch(ConstraintUnit),
 }
 
 impl SizingUnit {
     pub fn calculate(&self, content: Float, bound: Float) -> Float {
         match self {
             SizingUnit::Fixed(a) => *a,
-            SizingUnit::Stretch => bound.max(0.),
-            SizingUnit::Percent(p) => bound * p,
-            SizingUnit::Collapse => content,
+            SizingUnit::Stretch(c) => c.calculate(bound).max(0.),
+            SizingUnit::Percent(p, min, max) => {
+                let min = min.calculate(bound);
+                let max = max.calculate(bound);
+
+                (bound * p).max(min).min(max)
+            }
+            SizingUnit::Collapse(c) => c.calculate(content),
         }
     }
 
     pub fn index(&self) -> u32 {
         match self {
             SizingUnit::Fixed(_) => 0,
-            SizingUnit::Collapse => 1,
-            SizingUnit::Percent(_) => 2,
-            SizingUnit::Stretch => 3,
+            SizingUnit::Collapse(c) => 1 + c.index(),
+            SizingUnit::Percent(_, _, _) => 5,
+            SizingUnit::Stretch(c) => 4 + c.index(),
         }
     }
 

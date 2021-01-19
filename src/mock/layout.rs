@@ -1,37 +1,42 @@
-use crate::{AlignUnit, Direction, Directional, Element, ElementBuilder, Float, SizingUnit};
+use crate::{AlignUnit, Direction, Element, ElementBuilder};
 use AlignUnit::*;
 use Direction::*;
-use SizingUnit::*;
 
 use rand::{thread_rng, Rng};
 
-pub fn directional(
-    direction: Direction,
-    width: SizingUnit,
-    height: SizingUnit,
-    spacing: Float,
-) -> ElementBuilder {
-    ElementBuilder::new()
-        .directional(Directional { direction, spacing })
-        .sizing(width, height)
-}
-
 pub fn header() -> Element {
-    directional(Horizontal, Stretch, Fixed(60.), 16.)
+    ElementBuilder::new()
+        .directional(Horizontal, 16.)
+        .sizing("Stretch", "Fixed:60")
         .label("header")
         .children(vec![
-            directional(Horizontal, Fixed(50.), Stretch, 0.).build(),
-            directional(Horizontal, Fixed(300.), Stretch, 0.)
+            ElementBuilder::new()
+                .directional(Horizontal, 0.)
+                .sizing("Fixed:50", "Stretch")
+                .build(),
+            ElementBuilder::new()
+                .directional(Horizontal, 0.)
+                .sizing("Fixed:300", "Stretch")
                 .align(End, Start)
                 .build(),
-            directional(Horizontal, Fixed(70.), Stretch, 0.).build(),
-            directional(Horizontal, Fixed(70.), Stretch, 0.)
+            ElementBuilder::new()
+                .directional(Horizontal, 0.)
+                .sizing("Fixed:70", "Stretch")
+                .build(),
+            ElementBuilder::new()
+                .directional(Horizontal, 0.)
+                .sizing("Fixed:70", "Stretch")
                 .align(Middle, Start)
                 .build(),
-            directional(Horizontal, Fixed(100.), Stretch, 0.)
+            ElementBuilder::new()
+                .directional(Horizontal, 0.)
+                .sizing("Fixed:100", "Stretch")
                 .align(Middle, Start)
                 .build(),
-            directional(Horizontal, Fixed(80.), Stretch, 0.).build(),
+            ElementBuilder::new()
+                .directional(Horizontal, 0.)
+                .sizing("Fixed:80", "Stretch")
+                .build(),
         ])
         .pad_all(16.0)
         .build()
@@ -39,17 +44,26 @@ pub fn header() -> Element {
 
 fn server_sidebar() -> Element {
     let children = (0..7)
-        .map(|_| directional(Horizontal, Fixed(40.), Fixed(40.), 0.).build())
+        .map(|_| {
+            ElementBuilder::new()
+                .directional(Horizontal, 0.)
+                .sizing("Fixed:40", "Fixed:40")
+                .build()
+        })
         .collect();
 
-    directional(Vertical, Collapse, Stretch, 16.)
+    ElementBuilder::new()
+        .directional(Vertical, 16.)
+        .sizing("Collapse", "Stretch")
         .children(children)
         .pad_all(16.)
         .build()
 }
 
 fn user_sidebar() -> Element {
-    directional(Vertical, Fixed(240.0), Stretch, 12.)
+    ElementBuilder::new()
+        .directional(Vertical, 12.)
+        .sizing("Fixed:240", "Stretch")
         .label("sidebar")
         .pad_all(16.)
         .children(vec![user(), user(), user(), user(), user(), user(), user()])
@@ -63,15 +77,26 @@ fn user() -> Element {
     let children = (0..*range)
         .map(|_| {
             let width = &rng.gen_range(0.2..1.0);
+            let width = format!("Percent:{}%,_,_", width);
 
-            directional(Horizontal, Percent(*width), Fixed(12.), 0.).build()
+            ElementBuilder::new()
+                .directional(Horizontal, 0.)
+                .sizing(&width, "Fixed:12")
+                .build()
         })
         .collect();
 
-    directional(Horizontal, Stretch, Collapse, 8.)
+    ElementBuilder::new()
+        .directional(Horizontal, 8.)
+        .sizing("Stretch", "Collapse")
         .children(vec![
-            directional(Horizontal, Fixed(35.), Fixed(35.), 0.).build(),
-            directional(Vertical, Stretch, Collapse, 4.)
+            ElementBuilder::new()
+                .directional(Horizontal, 0.)
+                .sizing("Fixed:35", "Fixed:35")
+                .build(),
+            ElementBuilder::new()
+                .directional(Vertical, 4.)
+                .sizing("Stretch", "Collapse")
                 .children(children)
                 .align(Start, Middle)
                 .build(),
@@ -84,10 +109,17 @@ fn channel_list() -> Element {
     let amount = &rng.gen_range(5..12);
 
     let children = (0..*amount)
-        .map(|_| directional(Horizontal, Stretch, Fixed(33.), 0.).build())
+        .map(|_| {
+            ElementBuilder::new()
+                .directional(Horizontal, 0.)
+                .sizing("Stretch", "Fixed:33")
+                .build()
+        })
         .collect();
 
-    directional(Vertical, Stretch, Stretch, 12.)
+    ElementBuilder::new()
+        .directional(Vertical, 12.)
+        .sizing("Stretch", "Stretch")
         .label("messages")
         .pad_all(16.)
         .children(children)
@@ -95,7 +127,9 @@ fn channel_list() -> Element {
 }
 
 fn main_sidebar() -> Element {
-    directional(Vertical, Fixed(240.), Stretch, 0.)
+    ElementBuilder::new()
+        .directional(Vertical, 0.)
+        .sizing("Fixed:240", "Stretch")
         .children(vec![channel_list()])
         .build()
 }
@@ -107,15 +141,26 @@ fn message() -> Element {
     let children = (0..*amount)
         .map(|_| {
             let width = &rng.gen_range(0.2..1.0);
+            let width = format!("Percent:{}%,_,_", width);
 
-            directional(Horizontal, Percent(*width), Fixed(12.), 0.).build()
+            ElementBuilder::new()
+                .directional(Horizontal, 0.)
+                .sizing(&width, "Fixed:12")
+                .build()
         })
         .collect();
 
-    directional(Horizontal, Stretch, Collapse, 8.)
+    ElementBuilder::new()
+        .directional(Horizontal, 8.)
+        .sizing("Stretch", "Collapse")
         .children(vec![
-            directional(Horizontal, Fixed(35.), Fixed(35.), 0.).build(),
-            directional(Vertical, Stretch, Collapse, 4.)
+            ElementBuilder::new()
+                .directional(Horizontal, 0.)
+                .sizing("Fixed:35", "Fixed:35")
+                .build(),
+            ElementBuilder::new()
+                .directional(Vertical, 4.)
+                .sizing("Stretch", "Collapse")
                 .children(children)
                 .build(),
         ])
@@ -124,7 +169,9 @@ fn message() -> Element {
 }
 
 fn messages() -> Element {
-    directional(Vertical, Stretch, Stretch, 12.)
+    ElementBuilder::new()
+        .directional(Vertical, 12.)
+        .sizing("Stretch", "Stretch")
         .label("messages")
         .children(vec![
             message(),
@@ -139,18 +186,25 @@ fn messages() -> Element {
 }
 
 fn content() -> Element {
-    directional(Vertical, Stretch, Stretch, 16.)
+    ElementBuilder::new()
+        .directional(Vertical, 16.)
+        .sizing("Stretch", "Stretch")
         .label("content")
         .children(vec![
             messages(),
-            directional(Horizontal, Stretch, Fixed(45.), 0.).build(),
+            ElementBuilder::new()
+                .directional(Horizontal, 0.)
+                .sizing("Stretch", "Fixed:45")
+                .build(),
         ])
         .pad_all(16.0)
         .build()
 }
 
 fn body() -> Element {
-    directional(Horizontal, Stretch, Stretch, 0.)
+    ElementBuilder::new()
+        .directional(Horizontal, 0.)
+        .sizing("Stretch", "Stretch")
         .label("body")
         .children(vec![
             server_sidebar(),
@@ -162,7 +216,9 @@ fn body() -> Element {
 }
 
 pub fn test_layout() -> Element {
-    directional(Vertical, Stretch, Stretch, 0.)
+    ElementBuilder::new()
+        .directional(Vertical, 0.)
+        .sizing("Stretch", "Stretch")
         .label("layout")
         .children(vec![header(), body()])
         .build()

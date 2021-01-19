@@ -1,6 +1,7 @@
 mod alignment;
 mod calculated;
 mod common;
+mod constraints;
 mod dimension;
 mod directional;
 mod element;
@@ -10,6 +11,7 @@ mod rect;
 
 pub use alignment::*;
 pub use common::*;
+pub use constraints::*;
 pub use dimension::*;
 pub use directional::*;
 pub use element::*;
