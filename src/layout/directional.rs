@@ -169,12 +169,12 @@ impl Directional {
 
         fn calculate_stretch(
             child: &Element,
-            primary_accumulation: &Vec<Float>,
+            primary_intrinsic: Float,
             available_primary: Float,
             available_secondary: Float,
             direction: Direction,
         ) -> (Float, Float) {
-            let available = available_primary - primary_accumulation.iter().sum::<Float>();
+            let available = available_primary - primary_intrinsic;
             let (width, height) = direction.swap(available, available_secondary);
 
             child
@@ -199,7 +199,7 @@ impl Directional {
                 }
                 SizingUnit::Stretch(_) | SizingUnit::Percent(_, _, _) => calculate_stretch(
                     child,
-                    &primary_accumulation,
+                    primary_intrinsic,
                     available_primary,
                     available_secondary,
                     self.direction,
@@ -209,7 +209,7 @@ impl Directional {
             let (primary, secondary) = self.direction.swap(calculated_width, calculated_height);
 
             primary_accumulation[*index] = primary;
-            primary_intrinsic += primary + self.spacing;
+            primary_intrinsic += primary;
 
             secondary_accumulation[*index] = secondary;
 
@@ -237,8 +237,9 @@ impl Directional {
         secondary_intrinsic: Float,
     ) -> Rect {
         let inner = {
-            // Remove the remaining spacing at the end
-            let primary_intrinsic = primary_intrinsic - self.spacing;
+            // Add the missing spacing to the intrinsic
+            let primary_intrinsic =
+                primary_intrinsic + (element.children().len() - 1) as Float * self.spacing;
 
             let (width, height) = self.direction.swap(primary_intrinsic, secondary_intrinsic);
             let (top, bottom, left, right) = element.padding().as_tuple();
