@@ -1,6 +1,6 @@
 use super::{
     alignment::*, calculated::CalculatedElement, common::*, dimension::Dimensions,
-    element::Element, padding::PaddedDimensions, rect::Rect,
+    element::Element, rect::Rect,
 };
 
 #[derive(Debug)]
@@ -18,84 +18,13 @@ impl Directional {
         Directional { direction, spacing }
     }
 
-    // Returns a new Rect with padding and spacing accounted for
-    fn occupy_bounds(&self, element: &Element, bounds: &Rect) -> Rect {
-        let mut new_bounds = bounds.clone();
-
-        new_bounds.dimensions.occupy_with_padding(element.padding());
-        new_bounds
-    }
-
-    // Loops through the children to get the accumulated space needed for the final calculation
-    fn calculate_accumulation(
-        &self,
-        sorted_indices: &Vec<usize>,
-        children: &Vec<Element>,
-        bounds: Rect,
-    ) -> (Vec<f32>, Vec<f32>) {
-        let mut primary_accumulation: Vec<Float> = vec![0.; children.len()];
-        let mut secondary_accumulation: Vec<Float> = vec![0.; children.len()];
-
-        let (width, height, _, _) = bounds.to_tuple();
-        let available_primary = self.direction.primary(width, height) - self.spacing;
-
-        fn calculate_intrinsic(child: &Element, bounds: Rect) -> (Float, Float) {
-            child.calculate(bounds).rect.dimensions.to_tuple()
-        }
-
-        fn calculate_stretch(
-            child: &Element,
-            primary_accumulation: &Vec<Float>,
-            available_primary: Float,
-            direction: Direction,
-        ) -> (Float, Float) {
-            let available = available_primary - primary_accumulation.iter().sum::<Float>();
-            let (width, height) = direction.swap(available, 0.0);
-
-            child
-                .calculate(Rect::new(width, height, 0.0, 0.0))
-                .rect
-                .dimensions
-                .to_tuple()
-        }
-
-        for index in sorted_indices {
-            let child = &children[*index];
-            let child_sizing = child.sizing();
-
-            // Get the primary (directional) unit here
-            let primary_unit = self
-                .direction
-                .primary(&child_sizing.width, &child_sizing.height);
-
-            let (calculated_width, calculated_height) = match primary_unit {
-                SizingUnit::Fixed(_) | SizingUnit::Collapse(_) => {
-                    calculate_intrinsic(child, bounds.clone())
-                }
-                SizingUnit::Stretch(_) | SizingUnit::Percent(_, _, _) => calculate_stretch(
-                    child,
-                    &primary_accumulation,
-                    available_primary,
-                    self.direction,
-                ),
-            };
-
-            let (primary, secondary) = self.direction.swap(calculated_width, calculated_height);
-
-            primary_accumulation[*index] = primary;
-            secondary_accumulation[*index] = secondary;
-        }
-
-        (primary_accumulation, secondary_accumulation)
-    }
-
     fn calculate_position_offsets(
         &self,
         accumulations: &Vec<Float>,
         children: &Vec<Element>,
-        bounds: Dimensions,
+        inner_bounds: Rect,
     ) -> (f32, f32) {
-        let (width, height) = bounds.to_tuple();
+        let (width, height) = inner_bounds.dimensions.as_tuple();
         let primary = self.direction.primary(width, height);
 
         let mut start_accumulation = -self.spacing;
@@ -133,15 +62,21 @@ impl Directional {
 
     fn calculate_positions(
         &self,
+        element: &Element,
         primary_accumulations: &Vec<Float>,
         secondary_accumulations: &Vec<Float>,
-        children: &Vec<Element>,
-        bounds: Dimensions,
+        inner_bounds: Rect,
     ) -> Vec<(Float, Float)> {
-        let secondary_bounds = self.direction.secondary(bounds.width, bounds.height);
+        let children = element.children();
+        let (offset_x, offset_y) = inner_bounds.position.as_tuple();
+
+        let secondary_bounds = {
+            let (width, height) = inner_bounds.dimensions.as_tuple();
+            self.direction.secondary(width, height)
+        };
 
         let (middle_offset, end_offset) =
-            self.calculate_position_offsets(primary_accumulations, children, bounds);
+            self.calculate_position_offsets(primary_accumulations, children, inner_bounds);
 
         let mut start_offset = 0.;
         let mut middle_offset = middle_offset;
@@ -171,106 +106,212 @@ impl Directional {
                 let secondary_offset =
                     secondary.calculate(*&secondary_accumulations[i], secondary_bounds);
 
-                (primary_offset, secondary_offset)
+                let (x, y) = self.direction.swap(primary_offset, secondary_offset);
+
+                (offset_x + x, offset_y + y)
             })
             .collect()
     }
 
-    fn calculate_childful(&self, element: &Element, outer: Rect) -> CalculatedElement {
-        let inner = self.occupy_bounds(element, &outer);
+    fn calculate_inner_bounds(&self, element: &Element, box_bounds: &Rect) -> Rect {
+        let (top, bottom, left, right) = element.padding().as_tuple();
 
+        let (mut width, mut height) = box_bounds.dimensions.as_tuple();
+        let (mut x, mut y) = box_bounds.position.as_tuple();
+
+        width -= left + right;
+        height -= top + bottom;
+
+        x += left;
+        y += top;
+
+        Rect::new(width, height, x, y)
+    }
+
+    fn sort_primary_indices(&self, element: &Element) -> Vec<usize> {
         let children = element.children();
+        let mut indices: Vec<_> = (0..children.len()).collect();
 
-        let sorted_indices = {
-            let mut indices: Vec<_> = (0..children.len()).collect();
+        indices.sort_by_key(|i| {
+            let child = &children[*i];
 
-            indices.sort_by_key(|i| {
-                let child = &children[*i];
+            let (width, height) = child.sizing().as_tuple();
+            let sizing = self.direction.primary(width, height);
 
-                let (width, height) = child.sizing().as_tuple();
-                let sizing = self.direction.primary(width, height);
+            sizing.index()
+        });
 
-                sizing.index()
-            });
+        indices
+    }
 
-            indices
+    // Loops through the children to get the accumulated space needed for the final calculation
+    fn calculate_accumulation(
+        &self,
+        sorted_indices: &Vec<usize>,
+        inner_bounds: &Rect,
+        children: &Vec<Element>,
+    ) -> (Vec<f32>, Vec<f32>, Float, Float) {
+        let mut primary_intrinsic: Float = 0.;
+        let mut primary_accumulation: Vec<Float> = vec![0.; children.len()];
+
+        let mut secondary_intrinsic: Float = 0.;
+        let mut secondary_accumulation: Vec<Float> = vec![0.; children.len()];
+
+        let (width, height, _, _) = inner_bounds.as_tuple();
+        let (available_primary, available_secondary) = self.direction.swap(width, height);
+
+        // Occupy spacing between children
+        let available_primary = available_primary - (children.len() - 1) as Float * self.spacing;
+
+        fn calculate_intrinsic(child: &Element, bounds: Rect) -> (Float, Float) {
+            child.calculate(bounds).rect.dimensions.as_tuple()
+        }
+
+        fn calculate_stretch(
+            child: &Element,
+            primary_accumulation: &Vec<Float>,
+            available_primary: Float,
+            available_secondary: Float,
+            direction: Direction,
+        ) -> (Float, Float) {
+            let available = available_primary - primary_accumulation.iter().sum::<Float>();
+            let (width, height) = direction.swap(available, available_secondary);
+
+            child
+                .calculate(Rect::new(width, height, 0.0, 0.0))
+                .rect
+                .dimensions
+                .as_tuple()
+        }
+
+        for index in sorted_indices {
+            let child = &children[*index];
+            let child_sizing = child.sizing();
+
+            // Get the primary (directional) unit here
+            let (primary_unit, secondary_unit) = self
+                .direction
+                .swap(&child_sizing.width, &child_sizing.height);
+
+            let (calculated_width, calculated_height) = match primary_unit {
+                SizingUnit::Fixed(_) | SizingUnit::Collapse(_) => {
+                    calculate_intrinsic(child, inner_bounds.clone())
+                }
+                SizingUnit::Stretch(_) | SizingUnit::Percent(_, _, _) => calculate_stretch(
+                    child,
+                    &primary_accumulation,
+                    available_primary,
+                    available_secondary,
+                    self.direction,
+                ),
+            };
+
+            let (primary, secondary) = self.direction.swap(calculated_width, calculated_height);
+
+            primary_accumulation[*index] = primary;
+            primary_intrinsic += primary + self.spacing;
+
+            secondary_accumulation[*index] = secondary;
+
+            // Accumulate intrinsic only for collapse/fixed,
+            // So stretching secondaries can stretch based on that
+            match secondary_unit {
+                SizingUnit::Stretch(_) => {}
+                _ => secondary_intrinsic = secondary_intrinsic.max(secondary),
+            }
+        }
+
+        (
+            primary_accumulation,
+            secondary_accumulation,
+            primary_intrinsic,
+            secondary_intrinsic,
+        )
+    }
+
+    fn calculate_box_bounds(
+        &self,
+        element: &Element,
+        outer_bounds: &Rect,
+        primary_intrinsic: Float,
+        secondary_intrinsic: Float,
+    ) -> Rect {
+        let inner = {
+            // Remove the remaining spacing at the end
+            let primary_intrinsic = primary_intrinsic - self.spacing;
+
+            let (width, height) = self.direction.swap(primary_intrinsic, secondary_intrinsic);
+            let (top, bottom, left, right) = element.padding().as_tuple();
+
+            Dimensions::new(width + left + right, height + top + bottom)
         };
 
-        let (primary_accumulations, secondary_accumulations) =
-            self.calculate_accumulation(&sorted_indices, children, inner.clone());
+        Rect::from_dimensions_and_position(
+            element.sizing().calculate(inner, outer_bounds.dimensions),
+            outer_bounds.position,
+        )
+    }
 
-        let mut calculated_children: Vec<Option<CalculatedElement>> = vec![None; children.len()];
+    fn calculate_childful(&self, element: &Element, outer_bounds: Rect) -> CalculatedElement {
+        let box_bounds = self.calculate_box_bounds(element, &outer_bounds, 0., 0.);
+        let inner_bounds = self.calculate_inner_bounds(element, &box_bounds);
+        let sorted_indices = self.sort_primary_indices(element);
 
-        let (top, bottom, left, right) = element.padding().to_tuple();
-        let (bounding_x, bounding_y) = outer.position.to_tuple();
+        /*if element.label() == Some(&String::from("server_sidebar")) {
+            dbg!(&box_bounds, &inner_bounds);
+        }*/
 
-        let positions = self.calculate_positions(
-            &primary_accumulations,
-            &secondary_accumulations,
-            children,
-            inner.dimensions,
+        let (
+            primary_accumulations,
+            secondary_accumulations,
+            primary_intrinsic,
+            secondary_intrinsic,
+        ) = self.calculate_accumulation(&sorted_indices, &inner_bounds, element.children());
+
+        /*if element.label() == Some(&String::from("server_sidebar")) {
+            dbg!(
+                &primary_accumulations,
+                &secondary_accumulations,
+                secondary_intrinsic
+            );
+        }*/
+
+        // Calculate the new box and inner bounds so future calculations are correct
+        let box_bounds = self.calculate_box_bounds(
+            element,
+            &outer_bounds,
+            primary_intrinsic,
+            secondary_intrinsic,
         );
 
-        // Get the secondary inner bound,
-        // so that secondary stretching can be calculated
-        let secondary_inner = {
-            let (width, height) = inner.dimensions.to_tuple();
-            let value = self.direction.secondary(width, height);
+        let inner_bounds = self.calculate_inner_bounds(element, &box_bounds);
 
-            value
-        };
+        let positions = self.calculate_positions(
+            &element,
+            &primary_accumulations,
+            &secondary_accumulations,
+            inner_bounds,
+        );
 
-        let mut secondary_inner_accumulation = 0.;
+        let children = element.children();
+        let mut calculated_children: Vec<Option<CalculatedElement>> = vec![None; children.len()];
 
         for i in 0..children.len() {
             let child = &children[i];
 
-            let accumulation = &primary_accumulations[i];
+            let primary = &primary_accumulations[i];
+            let secondary = &secondary_accumulations[i];
+
+            let (outer_width, outer_height) = self.direction.swap(primary, secondary);
             let (x, y) = &positions[i];
 
-            let (width, height) = self.direction.swap(accumulation, &secondary_inner);
-            let (x_offset, y_offset) = self.direction.swap(*x, *y);
-
-            let final_x = bounding_x + x_offset + left;
-            let final_y = bounding_y + y_offset + top;
-
             calculated_children[i] =
-                Some(child.calculate(Rect::new(*width, *height, final_x, final_y)));
-
-            // Add the secondary_inner_accumulation, only if this isn't a stretching element
-            let (width, height) = child.sizing().as_tuple();
-            let secondary_unit = self.direction.secondary(width, height);
-
-            match secondary_unit {
-                SizingUnit::Stretch(_) => {}
-                _ => {
-                    secondary_inner_accumulation =
-                        secondary_accumulations[i].max(secondary_inner_accumulation);
-                }
-            }
+                Some(child.calculate(Rect::new(*outer_width, *outer_height, *x, *y)));
         }
-
-        // Calculate the bounding box of this element with
-        // the children + spacing
-        let primary_bound: Float = primary_accumulations.iter().sum::<Float>()
-            + ((children.len() - 1) as Float * self.spacing);
-
-        // Account for padding in content
-        let (width, height) = {
-            let (w, h) = self
-                .direction
-                .swap(primary_bound, secondary_inner_accumulation);
-
-            (w + left + right, h + top + bottom)
-        };
-
-        let calculated_bounds = element
-            .sizing()
-            .calculate(Dimensions::new(width, height), outer.dimensions);
 
         CalculatedElement {
             children: calculated_children.into_iter().flatten().collect(),
-            rect: Rect::from_dimensions_and_position(calculated_bounds, outer.position),
+            rect: box_bounds,
         }
     }
 
@@ -290,17 +331,6 @@ impl Directional {
         }
 
         self.calculate_childless(element, dimensions)
-    }
-}
-
-trait DirectionalDimensions {
-    fn occupy_with_direction(&mut self, direction: Direction, space_to_occupy: Float);
-}
-
-impl DirectionalDimensions for Dimensions {
-    fn occupy_with_direction(&mut self, direction: Direction, space_to_occupy: Float) {
-        let (directional, _) = direction.swap(&mut self.width, &mut self.height);
-        *directional -= space_to_occupy;
     }
 }
 

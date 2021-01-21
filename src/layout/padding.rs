@@ -23,7 +23,7 @@ impl Padding {
         Padding::new(0.0, 0.0, 0.0, 0.0)
     }
 
-    pub fn to_tuple(&self) -> (Float, Float, Float, Float) {
+    pub fn as_tuple(&self) -> (Float, Float, Float, Float) {
         (self.top, self.bottom, self.left, self.right)
     }
 }

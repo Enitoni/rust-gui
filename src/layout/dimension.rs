@@ -13,7 +13,7 @@ impl Dimensions {
         Dimensions { width, height }
     }
 
-    pub fn to_tuple(&self) -> (Float, Float) {
+    pub fn as_tuple(&self) -> (Float, Float) {
         (self.width, self.height)
     }
 

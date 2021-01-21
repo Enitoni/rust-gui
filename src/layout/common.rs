@@ -45,14 +45,21 @@ impl SizingUnit {
     pub fn calculate(&self, content: Float, bound: Float) -> Float {
         match self {
             SizingUnit::Fixed(a) => *a,
-            SizingUnit::Stretch(c) => c.calculate(bound).max(0.),
+            SizingUnit::Stretch(c) => {
+                let max = c.calculate(bound);
+
+                bound.min(max).max(0.)
+            }
             SizingUnit::Percent(p, min, max) => {
                 let min = min.calculate(bound);
                 let max = max.calculate(bound);
 
                 (bound * p).max(min).min(max)
             }
-            SizingUnit::Collapse(c) => c.calculate(content),
+            SizingUnit::Collapse(c) => {
+                let min = c.calculate(content);
+                content.max(min)
+            }
         }
     }
 

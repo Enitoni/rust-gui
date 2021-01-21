@@ -44,8 +44,8 @@ impl Rect {
     }
 
     pub fn center(&self, dimensions: Dimensions) -> Position {
-        let (width, height) = self.dimensions.to_tuple();
-        let (target_width, target_height) = dimensions.to_tuple();
+        let (width, height) = self.dimensions.as_tuple();
+        let (target_width, target_height) = dimensions.as_tuple();
 
         Position::new(
             width / 2.0 - target_width / 2.0,
@@ -59,9 +59,9 @@ impl Rect {
 
     /// Returns a tuple of the rect's values
     /// (width, height, x, y)
-    pub fn to_tuple(&self) -> (Float, Float, Float, Float) {
-        let (width, height) = self.dimensions.to_tuple();
-        let (x, y) = self.position.to_tuple();
+    pub fn as_tuple(&self) -> (Float, Float, Float, Float) {
+        let (width, height) = self.dimensions.as_tuple();
+        let (x, y) = self.position.as_tuple();
 
         (width, height, x, y)
     }

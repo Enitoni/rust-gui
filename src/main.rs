@@ -17,7 +17,7 @@ pub mod graphics;
 use graphics::rectangle_shape::RectangleShape;
 
 fn create_rect_shape(rect: &layout::Rect) -> RectangleShape {
-    let (width, height, x, y) = rect.to_tuple();
+    let (width, height, x, y) = rect.as_tuple();
 
     RectangleShape::new(width, height, x, y, Some(-1.0))
 }

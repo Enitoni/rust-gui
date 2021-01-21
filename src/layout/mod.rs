@@ -22,12 +22,12 @@ mod test {
     use std::time::Instant;
 
     use super::rect::Rect;
-    use crate::mock::layout::test_layout;
+    use crate::mock::layout::body;
 
     #[test]
     fn computes_complex_directional_layout() {
         let rect = Rect::new(800.0, 800.0, 0.0, 0.0);
-        let layout = test_layout();
+        let layout = body();
 
         let iterations = 1;
         let mut nodes: usize = 0;

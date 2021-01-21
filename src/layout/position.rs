@@ -32,7 +32,7 @@ impl Position {
         self.y = y;
     }
 
-    pub fn to_tuple(&self) -> (Float, Float) {
+    pub fn as_tuple(&self) -> (Float, Float) {
         (self.x, self.y)
     }
 }

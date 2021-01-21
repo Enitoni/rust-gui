@@ -57,10 +57,11 @@ fn server_sidebar() -> Element {
         .sizing("Collapse", "Stretch")
         .children(children)
         .pad_all(16.)
+        .label("server_sidebar")
         .build()
 }
 
-fn user_sidebar() -> Element {
+pub fn user_sidebar() -> Element {
     ElementBuilder::new()
         .directional(Vertical, 12.)
         .sizing("Fixed:240", "Stretch")
@@ -101,6 +102,7 @@ fn user() -> Element {
                 .align(Start, Middle)
                 .build(),
         ])
+        .label("user")
         .build()
 }
 
@@ -171,7 +173,7 @@ fn message() -> Element {
 fn messages() -> Element {
     ElementBuilder::new()
         .directional(Vertical, 12.)
-        .sizing("Stretch", "Stretch")
+        .sizing("Stretch:800", "Stretch")
         .label("messages")
         .children(vec![
             message(),
@@ -182,10 +184,11 @@ fn messages() -> Element {
             message(),
             message(),
         ])
+        .align(Middle, Start)
         .build()
 }
 
-fn content() -> Element {
+pub fn content() -> Element {
     ElementBuilder::new()
         .directional(Vertical, 16.)
         .sizing("Stretch", "Stretch")
@@ -201,7 +204,7 @@ fn content() -> Element {
         .build()
 }
 
-fn body() -> Element {
+pub fn body() -> Element {
     ElementBuilder::new()
         .directional(Horizontal, 0.)
         .sizing("Stretch", "Stretch")
