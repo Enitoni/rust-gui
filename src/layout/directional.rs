@@ -257,24 +257,12 @@ impl Directional {
         let inner_bounds = self.calculate_inner_bounds(element, &box_bounds);
         let sorted_indices = self.sort_primary_indices(element);
 
-        /*if element.label() == Some(&String::from("server_sidebar")) {
-            dbg!(&box_bounds, &inner_bounds);
-        }*/
-
         let (
             primary_accumulations,
             secondary_accumulations,
             primary_intrinsic,
             secondary_intrinsic,
         ) = self.calculate_accumulation(&sorted_indices, &inner_bounds, element.children());
-
-        /*if element.label() == Some(&String::from("server_sidebar")) {
-            dbg!(
-                &primary_accumulations,
-                &secondary_accumulations,
-                secondary_intrinsic
-            );
-        }*/
 
         // Calculate the new box and inner bounds so future calculations are correct
         let box_bounds = self.calculate_box_bounds(
