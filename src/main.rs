@@ -57,7 +57,7 @@ fn main() {
 
     windowed_context
         .window()
-        .set_min_inner_size(Some(glutin::dpi::PhysicalSize::new(400, 260)));
+        .set_min_inner_size(Some(glutin::dpi::PhysicalSize::new(780, 650)));
 
     gl::load_with(|s| windowed_context.get_proc_address(s) as *const _);
 
