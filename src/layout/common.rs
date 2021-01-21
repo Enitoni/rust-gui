@@ -51,8 +51,8 @@ impl SizingUnit {
                 bound.min(max).max(0.)
             }
             SizingUnit::Percent(p, min, max) => {
-                let min = min.calculate(bound);
-                let max = max.calculate(bound);
+                let min = min.calculate(bound * p);
+                let max = max.calculate(bound * p);
 
                 (bound * p).max(min).min(max)
             }
