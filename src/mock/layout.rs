@@ -198,6 +198,20 @@ pub fn content() -> Element {
             ElementBuilder::new()
                 .directional(Horizontal, 0.)
                 .sizing("Stretch", "Fixed:45")
+                .children(vec![
+                    ElementBuilder::new()
+                        .directional(Horizontal, 0.)
+                        .sizing("Percent:50,_,_", "Stretch")
+                        .build(),
+                    ElementBuilder::new()
+                        .directional(Horizontal, 0.)
+                        .sizing("Stretch", "Stretch")
+                        .build(),
+                    ElementBuilder::new()
+                        .directional(Horizontal, 0.)
+                        .sizing("Fixed:40", "Stretch")
+                        .build(),
+                ])
                 .build(),
         ])
         .pad_all(16.0)
