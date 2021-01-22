@@ -201,7 +201,8 @@ pub fn content() -> Element {
                 .children(vec![
                     ElementBuilder::new()
                         .directional(Horizontal, 0.)
-                        .sizing("Percent:50,_,_", "Stretch")
+                        .sizing("Percent:0.5,_,_", "Stretch")
+                        .label("percento")
                         .build(),
                     ElementBuilder::new()
                         .directional(Horizontal, 0.)
@@ -209,7 +210,7 @@ pub fn content() -> Element {
                         .build(),
                     ElementBuilder::new()
                         .directional(Horizontal, 0.)
-                        .sizing("Fixed:40", "Stretch")
+                        .sizing("Fixed:80", "Stretch")
                         .build(),
                 ])
                 .build(),
