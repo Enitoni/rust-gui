@@ -19,7 +19,15 @@ use graphics::rectangle_shape::RectangleShape;
 fn create_rect_shape(rect: &layout::Rect) -> RectangleShape {
     let (width, height, x, y) = rect.as_tuple();
 
-    RectangleShape::new(width, height, x, y, Some(-1.0))
+    RectangleShape::new(
+        width,
+        height,
+        x,
+        y,
+        Some(-1.0),
+        (0.0, 0.0, 1.0, 0.04),
+        (1.2, 0.2, 1.0, 0.5),
+    )
 }
 
 // // Returns a testing rect shape

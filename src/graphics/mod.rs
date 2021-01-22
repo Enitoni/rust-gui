@@ -25,3 +25,13 @@ impl Uniform for f32 {
         }
     }
 }
+
+impl Uniform for (f32, f32, f32, f32) {
+    fn set(&self, id: &str, handle: GLuint) {
+        unsafe {
+            let name = CString::new(id.as_bytes()).unwrap();
+            let location = gl::GetUniformLocation(handle, name.as_ptr());
+            gl::ProgramUniform4f(handle, location, self.0, self.1, self.2, self.3);
+        }
+    }
+}

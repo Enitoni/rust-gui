@@ -5,6 +5,9 @@ use std::ptr;
 
 use gl::types::*;
 
+use crate::Float;
+pub type Float4 = (Float, Float, Float, Float);
+
 #[derive(Debug)]
 pub struct RectangleShape {
     vbo: GLuint,
@@ -14,6 +17,8 @@ pub struct RectangleShape {
     pub x: f32,
     pub y: f32,
     pub border_thickness: f32,
+    pub border_color: Float4,
+    pub fill_color: Float4,
 }
 
 impl Drop for RectangleShape {
@@ -34,6 +39,8 @@ impl RectangleShape {
         left: f32,
         top: f32,
         border_thickness: Option<f32>,
+        fill_color: Float4,
+        border_color: Float4,
     ) -> RectangleShape {
         let mut r = RectangleShape {
             vbo: 0,
@@ -43,6 +50,8 @@ impl RectangleShape {
             x: left,
             y: top,
             border_thickness: border_thickness.unwrap_or(0.),
+            border_color,
+            fill_color,
         };
         r.init_opengl_members();
 
@@ -173,10 +182,12 @@ impl RectangleShape {
         unsafe {
             gl::BindVertexArray(self.vao);
             shader.setUniform("is_border", 0);
+            shader.setUniform("fill_color", self.fill_color);
             gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
 
             if self.border_thickness != 0. {
                 shader.setUniform("is_border", 1);
+                shader.setUniform("border_color", self.border_color);
                 gl::DrawArrays(gl::TRIANGLES, 4, 24);
             }
 
