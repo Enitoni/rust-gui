@@ -67,6 +67,10 @@ fn main() {
         .window()
         .set_min_inner_size(Some(glutin::dpi::PhysicalSize::new(780, 650)));
 
+    &windowed_context
+        .window()
+        .set_inner_size(glutin::dpi::PhysicalSize::new(800, 800));
+
     gl::load_with(|s| windowed_context.get_proc_address(s) as *const _);
 
     println!(
@@ -76,7 +80,13 @@ fn main() {
 
     let element = test_layout();
 
-    println!("{:?}", element.calculate(Rect::from_dimensions(viewport)));
+    println!(
+        "{:?}",
+        element.calculate(
+            Rect::from_dimensions(viewport),
+            Rect::from_dimensions(viewport)
+        )
+    );
 
     unsafe {
         gl::Enable(gl::BLEND);
@@ -143,7 +153,7 @@ fn main() {
 
                 let rect = Rect::new(size.width as f32, size.height as f32, 0.0, 0.0);
 
-                let calculated = element.calculate(rect);
+                let calculated = element.calculate(rect.clone(), rect);
                 let flattened = calculated.flatten();
 
                 unsafe {

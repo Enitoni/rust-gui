@@ -42,7 +42,7 @@ pub enum SizingUnit {
 }
 
 impl SizingUnit {
-    pub fn calculate(&self, content: Float, bound: Float) -> Float {
+    pub fn calculate(&self, content: Float, bound: Float, outer: Float) -> Float {
         match self {
             SizingUnit::Fixed(a) => *a,
             SizingUnit::Stretch(c) => {
@@ -50,11 +50,11 @@ impl SizingUnit {
 
                 bound.min(max).max(0.)
             }
-            SizingUnit::Percent(p, min, max) => {
-                let min = min.calculate(bound * p);
-                let max = max.calculate(bound * p);
+            SizingUnit::Percent(p, _min, _max) => {
+                //let min = min.calculate(bound * p);
+                //let max = max.calculate(bound * p);
 
-                (bound * p).max(min).min(max)
+                outer * p
             }
             SizingUnit::Collapse(c) => {
                 let min = c.calculate(content);
@@ -87,16 +87,25 @@ pub struct Sizing {
 }
 
 impl Sizing {
-    pub fn calculate(&self, content: Dimensions, bounds: Dimensions) -> Dimensions {
+    pub fn calculate(
+        &self,
+        content: Dimensions,
+        bounds: Dimensions,
+        outer: Dimensions,
+    ) -> Dimensions {
         Dimensions {
-            width: self.width.calculate(content.width, bounds.width),
-            height: self.height.calculate(content.height, bounds.height),
+            width: self
+                .width
+                .calculate(content.width, bounds.width, outer.width),
+            height: self
+                .height
+                .calculate(content.height, bounds.height, outer.height),
         }
     }
 
     // This is used when the content is unknown, such as with a childless element
-    pub fn calculate_without_content(&self, bounds: Dimensions) -> Dimensions {
-        self.calculate(Dimensions::new(0.0, 0.0), bounds)
+    pub fn calculate_without_content(&self, bounds: Dimensions, outer: Dimensions) -> Dimensions {
+        self.calculate(Dimensions::new(0.0, 0.0), bounds, outer)
     }
 
     pub fn as_tuple(&self) -> (SizingUnit, SizingUnit) {

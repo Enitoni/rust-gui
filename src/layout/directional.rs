@@ -22,7 +22,7 @@ impl Directional {
         &self,
         accumulations: &Vec<Float>,
         children: &Vec<Element>,
-        inner_bounds: Rect,
+        inner_bounds: &Rect,
     ) -> (f32, f32) {
         let (width, height) = inner_bounds.dimensions.as_tuple();
         let primary = self.direction.primary(width, height);
@@ -65,7 +65,7 @@ impl Directional {
         element: &Element,
         primary_accumulations: &Vec<Float>,
         secondary_accumulations: &Vec<Float>,
-        inner_bounds: Rect,
+        inner_bounds: &Rect,
     ) -> Vec<(Float, Float)> {
         let children = element.children();
         let (offset_x, offset_y) = inner_bounds.position.as_tuple();
@@ -149,6 +149,7 @@ impl Directional {
         &self,
         sorted_indices: &Vec<usize>,
         inner_bounds: &Rect,
+        outer_bounds: &Rect,
         children: &Vec<Element>,
     ) -> (Vec<f32>, Vec<f32>, Float, Float) {
         let mut primary_intrinsic: Float = 0.;
@@ -163,8 +164,16 @@ impl Directional {
         // Occupy spacing between children
         let available_primary = available_primary - (children.len() - 1) as Float * self.spacing;
 
-        fn calculate_intrinsic(child: &Element, bounds: Rect) -> (Float, Float) {
-            child.calculate(bounds).rect.dimensions.as_tuple()
+        fn calculate_intrinsic(
+            child: &Element,
+            available_bounds: Rect,
+            outer_bounds: Rect,
+        ) -> (Float, Float) {
+            child
+                .calculate(available_bounds, outer_bounds)
+                .rect
+                .dimensions
+                .as_tuple()
         }
 
         fn calculate_stretch(
@@ -177,8 +186,10 @@ impl Directional {
             let available = available_primary - primary_intrinsic;
             let (width, height) = direction.swap(available, available_secondary);
 
+            let available = Rect::new(width, height, 0.0, 0.0);
+
             child
-                .calculate(Rect::new(width, height, 0.0, 0.0))
+                .calculate(available.clone(), available)
                 .rect
                 .dimensions
                 .as_tuple()
@@ -194,10 +205,10 @@ impl Directional {
                 .swap(&child_sizing.width, &child_sizing.height);
 
             let (calculated_width, calculated_height) = match primary_unit {
-                SizingUnit::Fixed(_) | SizingUnit::Collapse(_) => {
-                    calculate_intrinsic(child, inner_bounds.clone())
+                SizingUnit::Fixed(_) | SizingUnit::Collapse(_) | SizingUnit::Percent(_, _, _) => {
+                    calculate_intrinsic(child, inner_bounds.clone(), outer_bounds.clone())
                 }
-                SizingUnit::Stretch(_) | SizingUnit::Percent(_, _, _) => calculate_stretch(
+                SizingUnit::Stretch(_) => calculate_stretch(
                     child,
                     primary_intrinsic,
                     available_primary,
@@ -232,6 +243,7 @@ impl Directional {
     fn calculate_box_bounds(
         &self,
         element: &Element,
+        available_bounds: &Rect,
         outer_bounds: &Rect,
         primary_intrinsic: Float,
         secondary_intrinsic: Float,
@@ -248,13 +260,22 @@ impl Directional {
         };
 
         Rect::from_dimensions_and_position(
-            element.sizing().calculate(inner, outer_bounds.dimensions),
-            outer_bounds.position,
+            element
+                .sizing()
+                .calculate(inner, available_bounds.dimensions, outer_bounds.dimensions),
+            available_bounds.position,
         )
     }
 
-    fn calculate_childful(&self, element: &Element, outer_bounds: Rect) -> CalculatedElement {
-        let box_bounds = self.calculate_box_bounds(element, &outer_bounds, 0., 0.);
+    fn calculate_childful(
+        &self,
+        element: &Element,
+        available_bounds: Rect,
+        outer_bounds: Rect,
+    ) -> CalculatedElement {
+        let box_bounds =
+            self.calculate_box_bounds(element, &available_bounds, &outer_bounds, 0., 0.);
+
         let inner_bounds = self.calculate_inner_bounds(element, &box_bounds);
         let sorted_indices = self.sort_primary_indices(element);
 
@@ -263,11 +284,17 @@ impl Directional {
             secondary_accumulations,
             primary_intrinsic,
             secondary_intrinsic,
-        ) = self.calculate_accumulation(&sorted_indices, &inner_bounds, element.children());
+        ) = self.calculate_accumulation(
+            &sorted_indices,
+            &inner_bounds,
+            &outer_bounds,
+            element.children(),
+        );
 
         // Calculate the new box and inner bounds so future calculations are correct
         let box_bounds = self.calculate_box_bounds(
             element,
+            &available_bounds,
             &outer_bounds,
             primary_intrinsic,
             secondary_intrinsic,
@@ -279,7 +306,7 @@ impl Directional {
             &element,
             &primary_accumulations,
             &secondary_accumulations,
-            inner_bounds,
+            &inner_bounds,
         );
 
         let children = element.children();
@@ -294,8 +321,10 @@ impl Directional {
             let (outer_width, outer_height) = self.direction.swap(primary, secondary);
             let (x, y) = &positions[i];
 
-            calculated_children[i] =
-                Some(child.calculate(Rect::new(*outer_width, *outer_height, *x, *y)));
+            calculated_children[i] = Some(child.calculate(
+                Rect::new(*outer_width, *outer_height, *x, *y),
+                inner_bounds.clone(),
+            ));
         }
 
         CalculatedElement {
@@ -304,22 +333,32 @@ impl Directional {
         }
     }
 
-    fn calculate_childless(&self, element: &Element, bounds: Rect) -> CalculatedElement {
+    fn calculate_childless(
+        &self,
+        element: &Element,
+        available_bounds: Rect,
+        outer_bounds: Rect,
+    ) -> CalculatedElement {
         let calculated = element
             .sizing()
-            .calculate_without_content(bounds.dimensions);
+            .calculate_without_content(available_bounds.dimensions, outer_bounds.dimensions);
 
-        let rect = Rect::from_dimensions_and_position(calculated, bounds.position);
+        let rect = Rect::from_dimensions_and_position(calculated, available_bounds.position);
 
         CalculatedElement::from_rect(rect)
     }
 
-    pub fn calculate(&self, element: &Element, dimensions: Rect) -> CalculatedElement {
+    pub fn calculate(
+        &self,
+        element: &Element,
+        available_bounds: Rect,
+        outer_bounds: Rect,
+    ) -> CalculatedElement {
         if element.children().len() > 0 {
-            return self.calculate_childful(element, dimensions);
+            return self.calculate_childful(element, available_bounds, outer_bounds);
         }
 
-        self.calculate_childless(element, dimensions)
+        self.calculate_childless(element, available_bounds, outer_bounds)
     }
 }
 
@@ -336,7 +375,7 @@ mod test {
             .sizing("Fixed:50", "Stretch")
             .build();
 
-        let result = a.calculate(rect);
+        let result = a.calculate(rect.clone(), rect);
 
         assert_eq!(result.rect.dimensions.width, 50.0);
         assert_eq!(result.rect.dimensions.height, 100.0);
@@ -357,7 +396,7 @@ mod test {
             .children(vec![child])
             .build();
 
-        let result = a.calculate(rect);
+        let result = a.calculate(rect.clone(), rect);
 
         assert_eq!(result.rect.dimensions.width, 200.0);
         assert_eq!(result.rect.dimensions.height, 50.0);
@@ -391,7 +430,7 @@ mod test {
             ])
             .build();
 
-        let result = element.calculate(rect);
+        let result = element.calculate(rect.clone(), rect);
         let child = &result.children[2];
 
         println!("{:?}", result);
@@ -419,7 +458,7 @@ mod test {
             .pad_all(10.0)
             .build();
 
-        let result = element.calculate(rect);
+        let result = element.calculate(rect.clone(), rect);
         let child = &result.children[0];
 
         assert_eq!(child.rect.dimensions.height, 50.0 - (10. * 2.0));

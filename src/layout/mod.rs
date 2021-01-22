@@ -22,12 +22,12 @@ mod test {
     use std::time::Instant;
 
     use super::rect::Rect;
-    use crate::mock::layout::body;
+    use crate::mock::layout::test_layout;
 
     #[test]
     fn computes_complex_directional_layout() {
         let rect = Rect::new(800.0, 800.0, 0.0, 0.0);
-        let layout = body();
+        let layout = test_layout();
 
         let iterations = 1;
         let mut nodes: usize = 0;
@@ -35,7 +35,7 @@ mod test {
         let time = Instant::now();
 
         for i in 0..iterations {
-            let result = layout.calculate(rect.clone());
+            let result = layout.calculate(rect.clone(), rect.clone());
 
             if i == 0 {
                 println!("{:#?}", result);
