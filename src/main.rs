@@ -25,8 +25,8 @@ fn create_rect_shape(rect: &layout::Rect) -> RectangleShape {
         x,
         y,
         Some(-1.0),
-        (0.0, 0.0, 1.0, 0.04),
-        (1.2, 0.2, 1.0, 0.5),
+        (0.3, 0.3, 1.0, 0.04),
+        (1.2, 0.2, 1.0, 0.3),
     )
 }
 
