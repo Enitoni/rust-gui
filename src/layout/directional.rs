@@ -149,7 +149,6 @@ impl Directional {
         &self,
         sorted_indices: &Vec<usize>,
         inner_bounds: &Rect,
-        outer_bounds: &Rect,
         children: &Vec<Element>,
     ) -> (Vec<f32>, Vec<f32>, Float, Float) {
         let mut primary_intrinsic: Float = 0.;
@@ -164,13 +163,11 @@ impl Directional {
         // Occupy spacing between children
         let available_primary = available_primary - (children.len() - 1) as Float * self.spacing;
 
-        fn calculate_intrinsic(
-            child: &Element,
-            available_bounds: Rect,
-            outer_bounds: Rect,
-        ) -> (Float, Float) {
+        fn calculate_intrinsic(child: &Element, inner_bounds: Rect) -> (Float, Float) {
             child
-                .calculate(available_bounds, outer_bounds)
+                // Inner bounds is used for both designated and outer, because
+                // designated space is not known at this time
+                .calculate(inner_bounds.clone(), inner_bounds)
                 .rect
                 .dimensions
                 .as_tuple()
@@ -206,7 +203,7 @@ impl Directional {
 
             let (calculated_width, calculated_height) = match primary_unit {
                 SizingUnit::Fixed(_) | SizingUnit::Collapse(_) | SizingUnit::Percent(_, _, _) => {
-                    calculate_intrinsic(child, inner_bounds.clone(), outer_bounds.clone())
+                    calculate_intrinsic(child, inner_bounds.clone())
                 }
                 SizingUnit::Stretch(_) => calculate_stretch(
                     child,
@@ -270,31 +267,28 @@ impl Directional {
     fn calculate_childful(
         &self,
         element: &Element,
-        available_bounds: Rect,
+        designated_bounds: Rect,
         outer_bounds: Rect,
     ) -> CalculatedElement {
         let box_bounds =
-            self.calculate_box_bounds(element, &available_bounds, &outer_bounds, 0., 0.);
+            self.calculate_box_bounds(element, &designated_bounds, &outer_bounds, 0., 0.);
 
         let inner_bounds = self.calculate_inner_bounds(element, &box_bounds);
         let sorted_indices = self.sort_primary_indices(element);
+
+        //dbg!(element.label(), &box_bounds, &inner_bounds, &outer_bounds);
 
         let (
             primary_accumulations,
             secondary_accumulations,
             primary_intrinsic,
             secondary_intrinsic,
-        ) = self.calculate_accumulation(
-            &sorted_indices,
-            &inner_bounds,
-            &outer_bounds,
-            element.children(),
-        );
+        ) = self.calculate_accumulation(&sorted_indices, &inner_bounds, element.children());
 
         // Calculate the new box and inner bounds so future calculations are correct
         let box_bounds = self.calculate_box_bounds(
             element,
-            &available_bounds,
+            &designated_bounds,
             &outer_bounds,
             primary_intrinsic,
             secondary_intrinsic,
@@ -342,6 +336,8 @@ impl Directional {
         let calculated = element
             .sizing()
             .calculate_without_content(available_bounds.dimensions, outer_bounds.dimensions);
+
+        //dbg!(element.label(), &available_bounds, &outer_bounds);
 
         let rect = Rect::from_dimensions_and_position(calculated, available_bounds.position);
 
