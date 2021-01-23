@@ -276,8 +276,6 @@ impl Directional {
         let inner_bounds = self.calculate_inner_bounds(element, &box_bounds);
         let sorted_indices = self.sort_primary_indices(element);
 
-        //dbg!(element.label(), &box_bounds, &inner_bounds, &outer_bounds);
-
         let (
             primary_accumulations,
             secondary_accumulations,
@@ -336,8 +334,6 @@ impl Directional {
         let calculated = element
             .sizing()
             .calculate_without_content(available_bounds.dimensions, outer_bounds.dimensions);
-
-        //dbg!(element.label(), &available_bounds, &outer_bounds);
 
         let rect = Rect::from_dimensions_and_position(calculated, available_bounds.position);
 
