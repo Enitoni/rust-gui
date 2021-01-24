@@ -52,6 +52,7 @@ use glutin::event::{Event, WindowEvent};
 use glutin::event_loop::{ControlFlow, EventLoop};
 use glutin::window::WindowBuilder;
 use glutin::ContextBuilder;
+use rusttype::VMetrics;
 
 fn main() {
     let viewport = Dimensions::new(800.0, 800.0);
@@ -120,30 +121,60 @@ fn main() {
     let font_data = std::fs::read("./assets/fonts/DejaVuSans.ttf").unwrap();
     let font = rusttype::Font::try_from_bytes(&font_data).expect("Error constructing font");
 
-    let a = font.glyphs_for("kylling".chars());
+    let test_string = "kroße krabbe pizza ist die pizza für dich und mich".chars();
+    let mut test_chars = test_string.map(|c| (c, font.glyph(c)));
 
-    let scale = rusttype::Scale::uniform(16.);
+    let scale = rusttype::Scale::uniform(24.);
     let start = rusttype::vector(200., 200.);
 
     const RED: Float4 = (1.0, 0.0, 0.0, 1.0);
     const TRANSPARENT: Float4 = (0.0, 0.0, 0.0, 0.0);
 
-    let text = {
-        let a = a.scan((None, 0.0), |&mut (ref mut last, ref mut x), g| {
-            let g = g.scaled(scale);
-            if let Some(last) = last {
-                *x += font.pair_kerning(scale, *last, g.id());
-            }
-            let w = g.h_metrics().advance_width;
-            let next = g.positioned(start + rusttype::point(*x, 0.));
-            *last = Some(next.id());
-            *x += w;
-            Some(next)
-        });
+    let MAX_WIDTH = 140.;
 
-        let rects = a
-            .map(|g| {
-                let b = g.pixel_bounding_box().unwrap();
+    // last point in the string where a line-wrap is desirable
+    let mut last_breakpoint = None;
+    // stored glyphs
+    let mut calculated_glyphs = Vec::new();
+
+    // last glyph on this line, for calculating kerning
+    let mut last_glyph = None;
+    let mut x_offset = 0.;
+    let mut y_offset = 0.;
+
+    while let Some((c, g)) = test_chars.next() {
+        if c.is_whitespace() {
+            last_breakpoint = Some((test_chars.clone(), calculated_glyphs.len()));
+        }
+
+        let g = g.scaled(scale);
+        if let Some(last) = last_glyph {
+            x_offset += font.pair_kerning(scale, last, g.id());
+        }
+
+        let w = g.h_metrics().advance_width;
+        let next = g.positioned(start + rusttype::point(x_offset, y_offset));
+        last_glyph = Some(next.id());
+        x_offset += w;
+        calculated_glyphs.push(next);
+
+        if x_offset > MAX_WIDTH {
+            x_offset = 0.;
+            let v_metrics = font.v_metrics(scale);
+            y_offset += (v_metrics.ascent - v_metrics.descent) + v_metrics.line_gap;
+            last_glyph = None;
+            if let Some((last, count)) = last_breakpoint.take() {
+                test_chars = last;
+                calculated_glyphs.truncate(count);
+            }
+        }
+    }
+
+    let text = {
+        let rects = calculated_glyphs
+            .iter()
+            .flat_map(|g| {
+                let b = g.pixel_bounding_box()?;
                 let mut buffer: Vec<(u8, u8, u8, u8)> =
                     vec![(0, 0, 0, 0); b.width() as usize * b.height() as usize];
 
@@ -152,7 +183,7 @@ fn main() {
                         (255, 0, 0, (v * 255.) as u8);
                 });
 
-                RectangleShape::new(
+                Some(RectangleShape::new(
                     b.width() as f32,
                     b.height() as f32,
                     b.min.x as f32,
@@ -165,7 +196,7 @@ fn main() {
                         b.height() as usize,
                         buffer.as_ptr() as *const u8,
                     )),
-                )
+                ))
             })
             .collect::<Vec<_>>();
 
