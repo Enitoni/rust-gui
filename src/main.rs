@@ -14,7 +14,7 @@ use mock::layout::*;
 use gl::types::*;
 
 pub mod graphics;
-use graphics::rectangle_shape::RectangleShape;
+use graphics::rectangle_shape::{Float4, RGBATexture, RectangleShape};
 
 fn create_rect_shape(rect: &layout::Rect) -> RectangleShape {
     let (width, height, x, y) = rect.as_tuple();
@@ -27,6 +27,7 @@ fn create_rect_shape(rect: &layout::Rect) -> RectangleShape {
         Some(-1.0),
         (0.0, 0.0, 1.0, 0.04),
         (1.2, 0.2, 1.0, 0.5),
+        None,
     )
 }
 
@@ -114,6 +115,63 @@ fn main() {
     let mut time = Instant::now();
     let mut size = windowed_context.window().inner_size();
 
+    // some font rendering tests
+
+    let font_data = std::fs::read("./assets/fonts/DejaVuSans.ttf").unwrap();
+    let font = rusttype::Font::try_from_bytes(&font_data).expect("Error constructing font");
+
+    let a = font.glyphs_for("kylling".chars());
+
+    let scale = rusttype::Scale::uniform(16.);
+    let start = rusttype::vector(200., 200.);
+
+    const RED: Float4 = (1.0, 0.0, 0.0, 1.0);
+    const TRANSPARENT: Float4 = (0.0, 0.0, 0.0, 0.0);
+
+    let text = {
+        let a = a.scan((None, 0.0), |&mut (ref mut last, ref mut x), g| {
+            let g = g.scaled(scale);
+            if let Some(last) = last {
+                *x += font.pair_kerning(scale, *last, g.id());
+            }
+            let w = g.h_metrics().advance_width;
+            let next = g.positioned(start + rusttype::point(*x, 0.));
+            *last = Some(next.id());
+            *x += w;
+            Some(next)
+        });
+
+        let rects = a
+            .map(|g| {
+                let b = g.pixel_bounding_box().unwrap();
+                let mut buffer: Vec<(u8, u8, u8, u8)> =
+                    vec![(0, 0, 0, 0); b.width() as usize * b.height() as usize];
+
+                g.draw(|x, y, v| {
+                    buffer[x as usize + y as usize * b.width() as usize] =
+                        (255, 0, 0, (v * 255.) as u8);
+                });
+
+                RectangleShape::new(
+                    b.width() as f32,
+                    b.height() as f32,
+                    b.min.x as f32,
+                    b.min.y as f32,
+                    None,
+                    RED,
+                    TRANSPARENT,
+                    Some(RGBATexture::new(
+                        b.width() as usize,
+                        b.height() as usize,
+                        buffer.as_ptr() as *const u8,
+                    )),
+                )
+            })
+            .collect::<Vec<_>>();
+
+        rects
+    };
+
     el.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait;
 
@@ -168,6 +226,10 @@ fn main() {
                 for child in flattened {
                     let rect = create_rect_shape(&child.rect);
                     rect.draw(&box_shader);
+                }
+
+                for r in text.iter() {
+                    r.draw(&box_shader);
                 }
 
                 windowed_context.swap_buffers().unwrap();

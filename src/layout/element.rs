@@ -5,10 +5,33 @@ use super::{
     directional::Directional, padding::Padding, rect::Rect,
 };
 
-#[derive(Debug)]
+pub trait ElementLayout {
+    fn kind_name(&self) -> String;
+    fn calculate(
+        &self,
+        element: &Element,
+        available_bounds: Rect,
+        outer_bounds: Rect,
+    ) -> CalculatedElement;
+}
+
 pub enum ElementKind {
     Directional(Directional),
+    Extern(Box<dyn ElementLayout>),
     None,
+}
+
+impl std::fmt::Debug for ElementKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ElementKind::Directional(d) => f.debug_tuple("DirectionaElement").field(d).finish(),
+            ElementKind::None => f.debug_tuple("NoneElement").finish(),
+            ElementKind::Extern(e) => f
+                .debug_tuple("ExternElement")
+                .field(&e.kind_name())
+                .finish(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -25,6 +48,7 @@ impl Element {
     pub fn calculate(&self, available_bounds: Rect, outer_bounds: Rect) -> CalculatedElement {
         match &self.kind {
             ElementKind::Directional(l) => l.calculate(&self, available_bounds, outer_bounds),
+            ElementKind::Extern(e) => e.calculate(&self, available_bounds, outer_bounds),
             ElementKind::None => CalculatedElement::empty(Dimensions::new(0.0, 0.0)),
         }
     }

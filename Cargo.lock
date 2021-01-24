@@ -866,6 +866,7 @@ dependencies = [
  "gl",
  "glutin",
  "rand",
+ "rusttype",
 ]
 
 [[package]]

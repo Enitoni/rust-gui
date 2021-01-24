@@ -9,6 +9,49 @@ use crate::Float;
 pub type Float4 = (Float, Float, Float, Float);
 
 #[derive(Debug)]
+pub struct RGBATexture {
+    pub handle: GLuint,
+}
+
+impl RGBATexture {
+    pub fn new(width: usize, height: usize, data: *const u8) -> Self {
+        let mut handle: GLuint = 0;
+
+        unsafe {
+            gl::CreateTextures(gl::TEXTURE_2D, 1, &mut handle);
+
+            gl::TextureStorage2D(handle, 1, gl::RGBA8, width as i32, height as i32);
+            gl::TextureSubImage2D(
+                handle,
+                0,
+                0,
+                0,
+                width as i32,
+                height as i32,
+                gl::RGBA,
+                gl::UNSIGNED_BYTE,
+                data as *const GLvoid,
+            );
+
+            gl::TextureParameteri(handle, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
+            gl::TextureParameteri(handle, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
+            gl::TextureParameteri(handle, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
+            gl::TextureParameteri(handle, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
+        }
+
+        RGBATexture { handle }
+    }
+}
+
+impl Drop for RGBATexture {
+    fn drop(&mut self) {
+        unsafe {
+            gl::DeleteTextures(1, &mut self.handle);
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct RectangleShape {
     vbo: GLuint,
     vao: GLuint,
@@ -19,6 +62,7 @@ pub struct RectangleShape {
     pub border_thickness: f32,
     pub border_color: Float4,
     pub fill_color: Float4,
+    pub texture: Option<RGBATexture>,
 }
 
 impl Drop for RectangleShape {
@@ -41,6 +85,7 @@ impl RectangleShape {
         border_thickness: Option<f32>,
         fill_color: Float4,
         border_color: Float4,
+        texture: Option<RGBATexture>,
     ) -> RectangleShape {
         let mut r = RectangleShape {
             vbo: 0,
@@ -52,6 +97,7 @@ impl RectangleShape {
             border_thickness: border_thickness.unwrap_or(0.),
             border_color,
             fill_color,
+            texture,
         };
         r.init_opengl_members();
 
@@ -181,6 +227,15 @@ impl RectangleShape {
     pub fn draw(&self, shader: &super::shader::Shader) {
         unsafe {
             gl::BindVertexArray(self.vao);
+
+            if let Some(tex) = &self.texture {
+                shader.setUniform("has_texture", 1);
+                gl::ActiveTexture(gl::TEXTURE0);
+                gl::BindTexture(gl::TEXTURE_2D, tex.handle);
+            } else {
+                shader.setUniform("has_texture", 0);
+            }
+
             shader.setUniform("is_border", 0);
             shader.setUniform("fill_color", self.fill_color);
             gl::DrawArrays(gl::TRIANGLE_STRIP, 0, 4);
