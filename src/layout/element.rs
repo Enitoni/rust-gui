@@ -36,12 +36,12 @@ impl std::fmt::Debug for ElementKind {
 
 #[derive(Debug)]
 pub struct Element {
-    kind: ElementKind,
-    sizing: Sizing,
-    padding: Padding,
-    alignment: Alignment,
-    children: Vec<Element>,
-    label: Option<String>,
+    pub(crate) kind: ElementKind,
+    pub(crate) sizing: Sizing,
+    pub(crate) padding: Padding,
+    pub(crate) alignment: Alignment,
+    pub(crate) children: Vec<Element>,
+    pub(crate) label: Option<String>,
 }
 
 impl Element {

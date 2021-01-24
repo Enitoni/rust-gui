@@ -10,11 +10,13 @@ mod position;
 mod rect;
 
 pub use alignment::*;
+pub use calculated::*;
 pub use common::*;
 pub use constraints::*;
 pub use dimension::*;
 pub use directional::*;
 pub use element::*;
+pub use padding::*;
 pub use rect::*;
 
 #[cfg(test)]

@@ -87,6 +87,10 @@ pub struct Sizing {
 }
 
 impl Sizing {
+    pub fn new(width: SizingUnit, height: SizingUnit) -> Self {
+        Self { width, height }
+    }
+
     pub fn calculate(
         &self,
         content: Dimensions,

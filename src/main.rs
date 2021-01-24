@@ -1,3 +1,5 @@
+#![feature(box_syntax)]
+
 #[allow(dead_code)]
 mod layout;
 use std::time::Instant;
