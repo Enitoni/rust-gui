@@ -188,33 +188,35 @@ fn messages() -> Element {
         .build()
 }
 
+pub fn chat_box() -> Element {
+    ElementBuilder::new()
+        .directional(Horizontal, 8.)
+        .sizing("Stretch", "Fixed:45")
+        .pad_all(16.)
+        .children(vec![
+            ElementBuilder::new()
+                .directional(Horizontal, 0.)
+                .sizing("Percent:0.5,_,_", "Stretch")
+                .label("percento")
+                .build(),
+            ElementBuilder::new()
+                .directional(Horizontal, 0.)
+                .sizing("Stretch", "Stretch")
+                .build(),
+            ElementBuilder::new()
+                .directional(Horizontal, 0.)
+                .sizing("Fixed:80", "Stretch")
+                .build(),
+        ])
+        .build()
+}
+
 pub fn content() -> Element {
     ElementBuilder::new()
         .directional(Vertical, 16.)
         .sizing("Stretch", "Stretch")
         .label("content")
-        .children(vec![
-            messages(),
-            ElementBuilder::new()
-                .directional(Horizontal, 0.)
-                .sizing("Stretch", "Fixed:45")
-                .children(vec![
-                    ElementBuilder::new()
-                        .directional(Horizontal, 0.)
-                        .sizing("Percent:0.5,_,_", "Stretch")
-                        .label("percento")
-                        .build(),
-                    ElementBuilder::new()
-                        .directional(Horizontal, 0.)
-                        .sizing("Stretch", "Stretch")
-                        .build(),
-                    ElementBuilder::new()
-                        .directional(Horizontal, 0.)
-                        .sizing("Fixed:80", "Stretch")
-                        .build(),
-                ])
-                .build(),
-        ])
+        .children(vec![messages(), chat_box()])
         .pad_all(16.0)
         .build()
 }
