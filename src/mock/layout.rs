@@ -241,7 +241,7 @@ fn message() -> Element {
             });
 
             Element {
-                kind: ElementKind::Extern(box text),
+                kind: ElementKind::Extern(Box::new(text)),
                 sizing: Sizing::new(
                     parse_sizing_unit("Collapse").unwrap(),
                     parse_sizing_unit("Collapse").unwrap(),
