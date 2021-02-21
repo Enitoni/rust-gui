@@ -4,6 +4,5 @@ use crate::layout::Rect;
 /// with state and computed bounds
 pub struct Element {
     rect: Rect,
-    state: *const u8,
     children: Vec<Element>,
 }
